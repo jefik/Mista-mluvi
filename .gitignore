@@ -1,0 +1,68 @@
+# =====================
+# Obecné
+# =====================
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =====================
+# Node.js (backend i frontend)
+# =====================
+node_modules/
+dist/
+build/
+coverage/
+
+# =====================
+# Backend (Express)
+# =====================
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/.env
+
+# =====================
+# Frontend (React)
+# =====================
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+frontend/.env
+
+# Logs
+frontend/logs
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+frontend/dist
+frontend/dist-ssr
+frontend/*.local
+
+# Editor directories and files
+frontend/.vscode/*
+frontend/!.vscode/extensions.json
+frontend/.idea
+frontend/.DS_Store
+frontend/*.suo
+frontend/*.ntvs*
+frontend/*.njsproj
+frontend/*.sln
+frontend/*.sw?
+
+
+# =====================
+# VS Code
+# =====================
+.vscode/
+!.vscode/extensions.json
+
+
