@@ -9,15 +9,29 @@ const options = {
       version: "1.0.0",
       description: "API dokumentace pro Místa mluví",
     },
-    tags: [
-        {
-            name: "Pins",
-            description: "Endpoints for managing map pins"
-        },
-        {
-            name: "Reported Pins",
-            description: "Endpoints for reporting pins"
+    components: {
+      securitySchemes: {
+        ApiKeyAuth: {
+          type: "apiKey",
+          in: "header",
+          name: "x-api-key"
         }
+      }
+    },
+
+    security: [ 
+        { ApiKeyAuth: [] } 
+    ],
+
+    tags: [
+      {
+        name: "Pins",
+        description: "Endpoints for managing map pins"
+      },
+      {
+        name: "Reported Pins",
+        description: "Endpoints for reporting pins"
+      }
     ]
   },
   apis: ["./src/api.js"], // cesta k souboru s endpointy

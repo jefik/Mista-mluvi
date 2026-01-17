@@ -68,3 +68,4 @@ frontend/*.sw?
 .vscode/
 !.vscode/extensions.json
 
+backend/swagger.json

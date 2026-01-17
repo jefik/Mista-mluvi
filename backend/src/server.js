@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import { apiKeyAuth } from './middlewares/apiKeyAuth.js'
 import db from "./db.js"; //import runs db init migration - DO NOT DELETE!
 import api from "./api.js";
-import { swaggerUiMiddleware, swaggerUiHandler } from "./swagger.js";
+import {swaggerUiMiddleware, swaggerUiHandler } from "./swagger/swagger.js";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 
