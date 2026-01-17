@@ -3,8 +3,28 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 export default function MapLeaflet() {
-  // Strictmode off for leaflet
+  // Ref for the map instance
   const mapRef = useRef(null);
+
+  const [pins, setPins] = useState([]);
+  const [draftPin, setDraftPin] = useState(null);
+
+  // Pins
+  const [showForm, setShowForm] = useState(false);
+  const [formPosition, setFormPosition] = useState({ x: 0, y: 0 });
+  const [showError, setShowError] = useState(false);
+  const draftMarkerRef = useRef(null);
+
+  // Ref for the form DOM element
+  const formRef = useRef(null);
+
+  // Intearaction turn off on pin form (modal)
+  useEffect(() => {
+    if (showForm && formRef.current) {
+      L.DomEvent.disableClickPropagation(formRef.current);
+      L.DomEvent.disableScrollPropagation(formRef.current);
+    }
+  }, [showForm]);
 
   useEffect(() => {
     // Only initialize map if not already initialized
@@ -12,18 +32,34 @@ export default function MapLeaflet() {
 
     const MAPY_API_KEY = import.meta.env.VITE_MAP_API_KEY;
 
-    // Define the boundaries of the map
+    // Define the boundaries of the Czech republic
     const southWest = L.latLng(48.55, 12.09);
     const northEast = L.latLng(51.06, 18.87);
     const czBounds = L.latLngBounds(southWest, northEast);
 
-    // Create the map and set its initial view and zoom level
+    // Create the map and set its initial view
     const map = L.map("map", {
       maxBounds: czBounds,
       maxBoundsViscosity: 1.0,
       minZoom: 8,
       maxZoom: 22,
     }).setView([49.8, 15.5], 7);
+
+    // Add click event to create new draft pin
+    map.on("click", (e) => {
+      const { lat, lng } = e.latlng;
+
+      // New empty draft pin
+      setDraftPin({ lat, lng, message: "" });
+      setShowError(false);
+
+      // Calculate screen position for the pin form (modal)
+      const point = mapRef.current.latLngToContainerPoint([lat, lng]);
+      setFormPosition({ x: point.x, y: point.y });
+
+      // Show the pin form
+      setShowForm(true);
+    });
 
     // Add the tile layer with Mapy.cz and the API key
     L.tileLayer(
@@ -54,13 +90,160 @@ export default function MapLeaflet() {
       },
     });
 
-    // finally we add our LogoControl to the map
+    // Add our LogoControl to the map
     new LogoControl().addTo(map);
 
     // Strictmode off for leaflet
-    // Set the map instance to the ref
+    // Save map instance in ref
     mapRef.current = map;
   }, []);
 
-  return <div id="map" style={{ height: "100vh" }} />;
+  // Render all saved pins on the map
+  useEffect(() => {
+    // Only initialize map if not already initialized
+    if (!mapRef.current) return;
+
+    pins.forEach((pin) => {
+      L.marker([pin.lat, pin.lng]).addTo(mapRef.current);
+    });
+  }, [pins]);
+
+  // Render draft pin preview
+  useEffect(() => {
+    // Only initialize map if not already initialized
+    if (!mapRef.current) return;
+
+    // If there is draft pin then remove it
+    if (draftMarkerRef.current) {
+      mapRef.current.removeLayer(draftMarkerRef.current);
+    }
+
+    if (!draftPin) return;
+
+    // Add new draft pin
+    const marker = L.marker([draftPin.lat, draftPin.lng], {
+      // volitelně: odlišná barva pro preview
+    }).addTo(mapRef.current);
+
+    draftMarkerRef.current = marker;
+  }, [draftPin]);
+
+  // Render transparent overlay when pin form (modal) is shown
+  useEffect(() => {
+    // Only initialize map if not already initialized
+    if (!mapRef.current) return;
+
+    // Get map
+    const map = mapRef.current;
+
+    if (showForm) {
+      // Create new pane for the overlay
+      if (!map.getPane("overlayPaneCustom")) {
+        map.createPane("overlayPaneCustom");
+        const pane = map.getPane("overlayPaneCustom");
+        pane.style.zIndex = 500; // Index soo overlay is above tiles but below pins
+        pane.style.pointerEvents = "none"; // Allow clicks on markers
+      }
+
+      // Render overlay rectangle
+      const bounds = map.getBounds();
+      const overlayRect = L.rectangle(bounds, {
+        pane: "overlayPaneCustom",
+        interactive: false,
+        color: "rgba(0, 0, 0, 0.72)",
+        weight: 0,
+        fillOpacity: 0.4,
+      }).addTo(map);
+
+      // Remove overlay when form is closed
+      return () => {
+        map.removeLayer(overlayRect);
+      };
+    }
+  }, [showForm]);
+
+  // Lock map interaction when form is shown
+  useEffect(() => {
+    // Only initialize map if not already initialized
+    if (!mapRef.current) return;
+
+    // Get map
+    const map = mapRef.current;
+
+    if (showForm) {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+      /* if (map.tap) map.tap.disable(); */
+    } else {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+      /* if (map.tap) map.tap.enable(); */
+    }
+  }, [showForm]);
+
+  return (
+    <div id="map" style={{ height: "100vh", position: "relative" }}>
+      {showForm && draftPin && (
+        <div
+          ref={formRef}
+          className="position-absolute bg-white p-3 border rounded"
+          style={{
+            top: formPosition.y,
+            left: formPosition.x,
+            zIndex: 1000,
+            minWidth: "200px",
+          }}
+        >
+          <h6>Přidat zprávu</h6>
+          <textarea
+            className="form-control mb-2"
+            rows={3}
+            value={draftPin.message}
+            onChange={(e) => {
+              setDraftPin({ ...draftPin, message: e.target.value });
+              if (e.target.value.trim()) setShowError(false);
+            }}
+          ></textarea>
+          {showError && (
+            <div className="text-danger small mb-2">
+              Musíte vyplnit zprávu pro uložení pinu.
+            </div>
+          )}
+          <button
+            className="btn btn-primary btn-sm me-2"
+            onClick={() => {
+              if (!draftPin.message.trim()) {
+                setShowError(true);
+                return;
+              }
+              setPins([...pins, draftPin]);
+              setDraftPin(null);
+              setShowForm(false);
+              setShowError(false);
+            }}
+          >
+            Uložit
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              setDraftPin(null);
+              setShowForm(false);
+              setShowError(false);
+            }}
+          >
+            Zrušit
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
