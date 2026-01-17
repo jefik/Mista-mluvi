@@ -27,6 +27,9 @@ backend/dist/
 backend/build/
 backend/.env
 
+#Database
+backend/data
+
 # =====================
 # Frontend (React)
 # =====================
@@ -64,5 +67,4 @@ frontend/*.sw?
 # =====================
 .vscode/
 !.vscode/extensions.json
-
 

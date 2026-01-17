@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { apiKeyAuth } from './middlewares/apiKeyAuth.js'
+import db from "./db.js";
 
 //load .env to process.env
 dotenv.config(); 
