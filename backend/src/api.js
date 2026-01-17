@@ -1,0 +1,239 @@
+import { Router } from "express";
+import db from "./db.js";
+
+const api = Router();
+
+/* --------------------------------------------------------------------------------------------
+   PINS ENDPOINTS
+-----------------------------------------------------------------------------------------------*/
+
+/**
+ * @openapi
+ * /api/pins:
+ *   get:
+ *     tags:
+ *       - Pins
+ *     summary: Get all pins
+ *     responses:
+ *       200:
+ *         description: List of pins
+ */
+api.get("/pins", (req, res) => {
+  const pins = db.prepare("SELECT * FROM pins").all();
+  res.json(pins);
+});
+
+/**
+ * @openapi
+ * /api/pins/{id}:
+ *   get:
+ *     tags:
+ *       - Pins
+ *     summary: Get pin by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Pin object
+ *       404:
+ *         description: Pin not found
+ */
+api.get("/pins/:id", (req, res) => {
+  const pin = db.prepare("SELECT * FROM pins WHERE id = ?").get(req.params.id);
+
+  if (!pin) {
+    return res.status(404).json({ error: "Pin not found" });
+  }
+
+  res.json(pin);
+});
+
+/**
+ * @openapi
+ * /api/pins:
+ *   post:
+ *     tags:
+ *       - Pins
+ *     summary: Create a new pin
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               latitude:
+ *                 type: number
+ *               longitude:
+ *                 type: number
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Created pin
+ */
+api.post("/pins", (req, res) => {
+  const { latitude, longitude, message } = req.body;
+
+  const insert = db.prepare(`
+    INSERT INTO pins (latitude, longitude, message)
+    VALUES (?, ?, ?)
+  `);
+
+  const result = insert.run(latitude, longitude, message);
+  const pin = db.prepare("SELECT * FROM pins WHERE id = ?").get(result.lastInsertRowid);
+
+  res.json(pin);
+});
+
+
+/**
+ * @openapi
+ * /api/pins/{id}:
+ *   delete:
+ *     tags:
+ *       - Pins
+ *     summary: Delete pin
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Deleted
+ */
+api.delete("/pins/:id", (req, res) => {
+  const stmt = db.prepare("DELETE FROM pins WHERE id = ?");
+  const result = stmt.run(req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: "Pin not found" });
+  }
+
+  res.json({ deleted: true });
+});
+
+
+/* --------------------------------------------------------------------------------------------------
+   REPORTED PINS ENDPOINTS
+--------------------------------------------------------------------------------------------------- */
+
+/**
+ * @openapi
+ * /api/reported-pins:
+ *   get:
+ *     tags:
+ *       - Reported Pins
+ *     summary: Get all reported pins
+ *     responses:
+ *       200:
+ *         description: List of reported pins
+ */
+api.get("/reported-pins", (req, res) => {
+  const reports = db.prepare("SELECT * FROM reported_pins").all();
+  res.json(reports);
+});
+
+/**
+ * @openapi
+ * /api/reported-pins/{id}:
+ *   get:
+ *     tags:
+ *       - Reported Pins
+ *     summary: Get reported pin by ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Report object
+ *       404:
+ *         description: Report not found
+ */
+api.get("/reported-pins/:id", (req, res) => {
+  const report = db.prepare("SELECT * FROM reported_pins WHERE id = ?").get(req.params.id);
+
+  if (!report) {
+    return res.status(404).json({ error: "Report not found" });
+  }
+
+  res.json(report);
+});
+
+/**
+ * @openapi
+ * /api/reported-pins:
+ *   post:
+ *     tags:
+ *       - Reported Pins
+ *     summary: Create a new report
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               pin_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Created report
+ */
+api.post("/reported-pins", (req, res) => {
+  const { pin_id } = req.body;
+
+  const pin = db.prepare("SELECT id FROM pins WHERE id = ?").get(pin_id);
+  if (!pin) {
+    return res.status(400).json({ error: "Pin not found" });
+  }
+
+  const stmt = db.prepare(`
+    INSERT INTO reported_pins (pin_id)
+    VALUES (?)
+  `);
+
+  const result = stmt.run(pin_id);
+  const report = db.prepare("SELECT * FROM reported_pins WHERE id = ?").get(result.lastInsertRowid);
+
+  res.json(report);
+});
+
+/**
+ * @openapi
+ * /api/reported-pins/{id}:
+ *   delete:
+ *     tags:
+ *       - Reported Pins
+ *     summary: Delete reported pin
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Deleted
+ */
+api.delete("/reported-pins/:id", (req, res) => {
+  const stmt = db.prepare("DELETE FROM reported_pins WHERE id = ?");
+  const result = stmt.run(req.params.id);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: "Report not found" });
+  }
+
+  res.json({ deleted: true });
+});
+
+export default api;
