@@ -3,8 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 export default function MapLeaflet() {
-  // Ref for the map instance
-  const mapRef = useRef(null);
+  // Icons
   const savedPin = L.icon({
     iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
     iconSize: [32, 32],
@@ -16,17 +15,30 @@ export default function MapLeaflet() {
     iconSize: [32, 32],
     iconAnchor: [16, 32],
   });
-  const [pins, setPins] = useState([]);
-  const [draftPin, setDraftPin] = useState(null);
 
   // Pins
+  const [pins, setPins] = useState([]);
+  const [draftPin, setDraftPin] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [formPosition, setFormPosition] = useState({ x: 0, y: 0 });
   const [showError, setShowError] = useState(false);
   const draftMarkerRef = useRef(null);
 
+  // Hover modal
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+  const [hoverPin, setHoverPin] = useState(null);
+
+  // Ref for cluster
+  const clusterRef = useRef(null);
+
   // Ref for the form DOM element
   const formRef = useRef(null);
+
+  // Ref with all rendered markers
+  const markersRef = useRef([]);
+
+  // Ref for the map instance
+  const mapRef = useRef(null);
 
   // Intearaction turn off on pin form (modal)
   useEffect(() => {
@@ -36,6 +48,7 @@ export default function MapLeaflet() {
     }
   }, [showForm]);
 
+  // MAP
   useEffect(() => {
     // Only initialize map if not already initialized
     if (mapRef.current) return;
@@ -54,6 +67,11 @@ export default function MapLeaflet() {
       minZoom: 8,
       maxZoom: 22,
     }).setView([49.8, 15.5], 7);
+
+    // Creater cluster group
+    const cluster = L.markerClusterGroup();
+    cluster.addTo(map);
+    clusterRef.current = cluster;
 
     // Add click event to create new draft pin
     map.on("click", (e) => {
@@ -110,11 +128,35 @@ export default function MapLeaflet() {
 
   // Render all saved pins on the map
   useEffect(() => {
-    // Only initialize map if not already initialized
-    if (!mapRef.current) return;
+    if (!mapRef.current || !clusterRef.current) return;
+
+    // Get the current cluster group
+    const cluster = clusterRef.current;
+
+    // Remove all existing markers (pins) from the cluster
+    cluster.clearLayers();
+    markersRef.current = [];
 
     pins.forEach((pin) => {
-      L.marker([pin.lat, pin.lng], { icon: savedPin }).addTo(mapRef.current);
+      const marker = L.marker([pin.lat, pin.lng], { icon: savedPin });
+
+      // HOVER
+      marker.on("mouseover", () => {
+        setHoverPin(pin);
+        // Calculate screen position for the hover pin message
+        const point = mapRef.current.latLngToContainerPoint([pin.lat, pin.lng]);
+        setHoverPosition({ x: point.x, y: point.y });
+      });
+
+      // Hide the message when not hovering
+      marker.on("mouseout", () => {
+        setHoverPin(null);
+      });
+
+      // Add marker to the cluster group
+      cluster.addLayer(marker);
+      // Save the marker instance
+      markersRef.current.push(marker);
     });
   }, [pins]);
 
@@ -288,6 +330,20 @@ export default function MapLeaflet() {
           >
             Zrušit
           </button>
+        </div>
+      )}
+      {hoverPin && (
+        <div
+          className="position-absolute bg-white p-3 border rounded"
+          style={{
+            top: hoverPosition.y,
+            left: hoverPosition.x,
+            zIndex: 1000,
+            minWidth: "200px",
+            pointerEvents: "none",
+          }}
+        >
+          <div>{hoverPin.message}</div>
         </div>
       )}
     </div>
