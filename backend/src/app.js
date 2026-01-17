@@ -26,4 +26,11 @@ app.use((err, req, res, next) => {
 });
 
 
-export default app;
+//------------------------------------------------------------------------------------------------
+//SERVER START LISTENING
+//------------------------------------------------------------------------------------------------
+const PORT = process.env.PORT;
+
+app.listen(PORT, () => {
+  console.log(`Server listening on localhost:${PORT}`);
+});
