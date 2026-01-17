@@ -5,7 +5,17 @@ import "leaflet/dist/leaflet.css";
 export default function MapLeaflet() {
   // Ref for the map instance
   const mapRef = useRef(null);
+  const savedPin = L.icon({
+    iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+  });
 
+  const previewPin = L.icon({
+    iconUrl: "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png",
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+  });
   const [pins, setPins] = useState([]);
   const [draftPin, setDraftPin] = useState(null);
 
@@ -104,7 +114,7 @@ export default function MapLeaflet() {
     if (!mapRef.current) return;
 
     pins.forEach((pin) => {
-      L.marker([pin.lat, pin.lng]).addTo(mapRef.current);
+      L.marker([pin.lat, pin.lng], { icon: savedPin }).addTo(mapRef.current);
     });
   }, [pins]);
 
@@ -122,9 +132,8 @@ export default function MapLeaflet() {
 
     // Add new draft pin
     const marker = L.marker([draftPin.lat, draftPin.lng], {
-      // volitelně: odlišná barva pro preview
+      icon: previewPin,
     }).addTo(mapRef.current);
-
     draftMarkerRef.current = marker;
   }, [draftPin]);
 
@@ -149,7 +158,7 @@ export default function MapLeaflet() {
       const bounds = map.getBounds();
       const overlayRect = L.rectangle(bounds, {
         pane: "overlayPaneCustom",
-        interactive: false,
+        interactive: true,
         color: "rgba(0, 0, 0, 0.72)",
         weight: 0,
         fillOpacity: 0.4,
@@ -187,6 +196,43 @@ export default function MapLeaflet() {
       map.keyboard.enable();
       /* if (map.tap) map.tap.enable(); */
     }
+  }, [showForm]);
+
+  // Escape leave
+  useEffect(() => {
+    if (!showForm) return;
+
+    const handleEsc = (e) => {
+      if (e.key === "Escape") {
+        setDraftPin(null);
+        setShowForm(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [showForm]);
+
+  // Click outside leave
+  useEffect(() => {
+    if (!showForm || !formRef.current) return;
+
+    const handleClickOutside = (e) => {
+      // If Click is not inside form
+      if (!formRef.current.contains(e.target)) {
+        setDraftPin(null);
+        setShowForm(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [showForm]);
 
   return (
