@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import { apiKeyAuth } from './middlewares/apiKeyAuth.js'
 
 //load .env to process.env
 dotenv.config(); 
@@ -12,6 +13,11 @@ app.use(express.json()); //parse json from request to req.body (req.body.name)
 
 //Endpoints
 app.get('/ready', (_req, res) => res.status(200).send('READY'));
+
+//API AUTH - REQUIRE API KEY
+app.use(apiKeyAuth);
+
+app.get('/test_api', (_req, res) => res.status(200).send('api response'));
 
 
 // 404 not found handler
