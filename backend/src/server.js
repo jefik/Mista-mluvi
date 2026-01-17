@@ -1,7 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { apiKeyAuth } from './middlewares/apiKeyAuth.js'
-import db from "./db.js";
+import db from "./db.js"; //import runs db init migration - DO NOT DELETE!
+import api from "./api.js";
 
 //load .env to process.env
 dotenv.config(); 
@@ -17,6 +18,10 @@ app.get('/ready', (_req, res) => res.status(200).send('READY'));
 
 //API AUTH - REQUIRE API KEY
 app.use(apiKeyAuth);
+
+// API endpoints 
+app.use("/api", api);
+
 
 app.get('/test_api', (_req, res) => res.status(200).send('api response'));
 
