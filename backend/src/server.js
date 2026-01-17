@@ -5,12 +5,22 @@ import db from "./db.js"; //import runs db init migration - DO NOT DELETE!
 import api from "./api.js";
 import { swaggerUiMiddleware, swaggerUiHandler } from "./swagger.js";
 import rateLimit from "express-rate-limit";
+import cors from "cors";
 
 //load .env to process.env
 dotenv.config(); 
 const isDev = process.env.IS_DEV == "true"; //IS DEVELOPMENT
 
 const app = express();
+
+//CORS
+app.use(cors({
+  origin: [
+   process.env.APP_URL,
+   "http://localhost:5173" //frontend dev
+  ]
+}));
+
 
 
 //Rate limiting - spam, dos attacks
