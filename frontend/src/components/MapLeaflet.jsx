@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { usePins, useCreatePin } from "../hooks/usePins";
 
 export default function MapLeaflet() {
   // Icons
@@ -17,7 +18,6 @@ export default function MapLeaflet() {
   });
 
   // Pins
-  const [pins, setPins] = useState([]);
   const [draftPin, setDraftPin] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [formPosition, setFormPosition] = useState({ x: 0, y: 0 });
@@ -48,6 +48,11 @@ export default function MapLeaflet() {
     }
   }, [showForm]);
 
+  // Database requests
+  const { data: pins = [] } = usePins();
+  const createPinMutation = useCreatePin();
+
+  // TODO: REMOVE ALL useEffects you can
   // MAP
   useEffect(() => {
     // Only initialize map if not already initialized
@@ -138,13 +143,18 @@ export default function MapLeaflet() {
     markersRef.current = [];
 
     pins.forEach((pin) => {
-      const marker = L.marker([pin.lat, pin.lng], { icon: savedPin });
+      const marker = L.marker([pin.latitude, pin.longitude], {
+        icon: savedPin,
+      });
 
       // HOVER
       marker.on("mouseover", () => {
         setHoverPin(pin);
         // Calculate screen position for the hover pin message
-        const point = mapRef.current.latLngToContainerPoint([pin.lat, pin.lng]);
+        const point = mapRef.current.latLngToContainerPoint([
+          pin.latitude,
+          pin.longitude,
+        ]);
         setHoverPosition({ x: point.x, y: point.y });
       });
 
@@ -173,12 +183,14 @@ export default function MapLeaflet() {
     if (!draftPin) return;
 
     // Add new draft pin
+    console.log(draftPin);
     const marker = L.marker([draftPin.lat, draftPin.lng], {
       icon: previewPin,
     }).addTo(mapRef.current);
     draftMarkerRef.current = marker;
   }, [draftPin]);
 
+  // TODO: REMOVE OVERLAYPANECUSTOM AND TRY TO USE MODAL
   // Render transparent overlay when pin form (modal) is shown
   useEffect(() => {
     // Only initialize map if not already initialized
@@ -277,6 +289,7 @@ export default function MapLeaflet() {
     };
   }, [showForm]);
 
+  // TODO: REMOVE OVERLAY PANEL ON MAP AND TRY TO USE MODAL MATERIAL UI
   return (
     <div id="map" style={{ height: "100vh", position: "relative" }}>
       {showForm && draftPin && (
@@ -312,7 +325,12 @@ export default function MapLeaflet() {
                 setShowError(true);
                 return;
               }
-              setPins([...pins, draftPin]);
+              //setPins([...pins, draftPin]);
+              createPinMutation.mutate({
+                latitude: draftPin.lat,
+                longitude: draftPin.lng,
+                message: draftPin.message,
+              });
               setDraftPin(null);
               setShowForm(false);
               setShowError(false);
