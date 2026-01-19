@@ -7,6 +7,7 @@ export const usePins = () => {
     queryFn: fetchPins,
     select: (data) =>
       data.map((pin) => ({
+        id: pin.id,
         latitude: pin.latitude,
         longitude: pin.longitude,
         message: pin.message,
