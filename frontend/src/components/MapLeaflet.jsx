@@ -40,14 +40,6 @@ export default function MapLeaflet() {
   // Ref for the map instance
   const mapRef = useRef(null);
 
-  // Intearaction turn off on pin form (modal)
-  useEffect(() => {
-    if (showForm && formRef.current) {
-      L.DomEvent.disableClickPropagation(formRef.current);
-      L.DomEvent.disableScrollPropagation(formRef.current);
-    }
-  }, [showForm]);
-
   // Database requests
   const { data: pins = [] } = usePins();
   const createPinMutation = useCreatePin();
@@ -80,17 +72,24 @@ export default function MapLeaflet() {
 
     // Add click event to create new draft pin
     map.on("click", (e) => {
+      // If the clicked target is not the map itself, exit the function
+      if (e.originalEvent.target.id !== "map") return;
       const { lat, lng } = e.latlng;
 
-      // New empty draft pin
+      // Make room for the pin 150px above the click
+      const containerPoint = map.latLngToContainerPoint(e.latlng);
+      const targetPoint = L.point(containerPoint.x, containerPoint.y - 150);
+      const targetLatLng = map.containerPointToLatLng(targetPoint);
+
+      // Move tha map
+      map.panTo(targetLatLng, { animate: true, duration: 0.5 });
+
+      // Empty pin data
       setDraftPin({ lat, lng, message: "" });
       setShowError(false);
 
-      // Calculate screen position for the pin form (modal)
-      const point = mapRef.current.latLngToContainerPoint([lat, lng]);
-      setFormPosition({ x: point.x, y: point.y });
-
-      // Show the pin form
+      // Initial position for the bubble
+      setFormPosition({ x: containerPoint.x, y: containerPoint.y });
       setShowForm(true);
     });
 
@@ -130,6 +129,29 @@ export default function MapLeaflet() {
     // Save map instance in ref
     mapRef.current = map;
   }, []);
+
+  // Update positions of open pin modals
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !showForm || !draftPin) return;
+
+    const updatePosition = () => {
+      const point = map.latLngToContainerPoint([draftPin.lat, draftPin.lng]);
+      setFormPosition({ x: point.x, y: point.y });
+    };
+
+    // Keep bubble anchored during any map movement
+    map.on("move", updatePosition);
+    map.on("zoom", updatePosition);
+
+    // Recalculate once immediately
+    updatePosition();
+
+    return () => {
+      map.off("move", updatePosition);
+      map.off("zoom", updatePosition);
+    };
+  }, [showForm, draftPin]);
 
   // Render all saved pins on the map
   useEffect(() => {
@@ -183,47 +205,12 @@ export default function MapLeaflet() {
     if (!draftPin) return;
 
     // Add new draft pin
-    console.log(draftPin);
+    console.log("PÍŠU", draftPin);
     const marker = L.marker([draftPin.lat, draftPin.lng], {
       icon: previewPin,
     }).addTo(mapRef.current);
     draftMarkerRef.current = marker;
   }, [draftPin]);
-
-  // TODO: REMOVE OVERLAYPANECUSTOM AND TRY TO USE MODAL
-  // Render transparent overlay when pin form (modal) is shown
-  useEffect(() => {
-    // Only initialize map if not already initialized
-    if (!mapRef.current) return;
-
-    // Get map
-    const map = mapRef.current;
-
-    if (showForm) {
-      // Create new pane for the overlay
-      if (!map.getPane("overlayPaneCustom")) {
-        map.createPane("overlayPaneCustom");
-        const pane = map.getPane("overlayPaneCustom");
-        pane.style.zIndex = 500; // Index soo overlay is above tiles but below pins
-        pane.style.pointerEvents = "none"; // Allow clicks on markers
-      }
-
-      // Render overlay rectangle
-      const bounds = map.getBounds();
-      const overlayRect = L.rectangle(bounds, {
-        pane: "overlayPaneCustom",
-        interactive: true,
-        color: "rgba(0, 0, 0, 0.72)",
-        weight: 0,
-        fillOpacity: 0.4,
-      }).addTo(map);
-
-      // Remove overlay when form is closed
-      return () => {
-        map.removeLayer(overlayRect);
-      };
-    }
-  }, [showForm]);
 
   // Lock map interaction when form is shown
   useEffect(() => {
@@ -270,98 +257,106 @@ export default function MapLeaflet() {
     };
   }, [showForm]);
 
-  // Click outside leave
-  useEffect(() => {
-    if (!showForm || !formRef.current) return;
-
-    const handleClickOutside = (e) => {
-      // If Click is not inside form
-      if (!formRef.current.contains(e.target)) {
-        setDraftPin(null);
-        setShowForm(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showForm]);
-
-  // TODO: REMOVE OVERLAY PANEL ON MAP AND TRY TO USE MODAL MATERIAL UI
   return (
-    <div id="map" style={{ height: "100vh", position: "relative" }}>
+    <div
+      id="map"
+      style={{ height: "100vh", position: "relative", overflow: "hidden" }}
+    >
       {showForm && draftPin && (
         <div
-          ref={formRef}
-          className="position-absolute bg-white p-3 border rounded"
+          className="position-absolute"
           style={{
+            zIndex: 2000,
             top: formPosition.y,
             left: formPosition.x,
-            zIndex: 1000,
-            minWidth: "200px",
+            transform: "translate(-50%, -102%) translateY(185px)",
+            pointerEvents: "auto",
           }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <h6>Přidat zprávu</h6>
-          <textarea
-            className="form-control mb-2"
-            rows={3}
-            value={draftPin.message}
-            onChange={(e) => {
-              setDraftPin({ ...draftPin, message: e.target.value });
-              if (e.target.value.trim()) setShowError(false);
-            }}
-          ></textarea>
-          {showError && (
-            <div className="text-danger small mb-2">
-              Musíte vyplnit zprávu pro uložení pinu.
+          <div className="card shadow-lg border-0" style={{ width: "300px" }}>
+            <div className="card-header bg-white border-0 py-2 d-flex justify-content-between align-items-center">
+              <strong className="small">Nová zpráva</strong>
+              <button
+                className="btn-close"
+                onClick={() => {
+                  setDraftPin(null);
+                  setShowForm(false);
+                }}
+              ></button>
             </div>
-          )}
-          <button
-            className="btn btn-primary btn-sm me-2"
-            onClick={() => {
-              if (!draftPin.message.trim()) {
-                setShowError(true);
-                return;
-              }
-              //setPins([...pins, draftPin]);
-              createPinMutation.mutate({
-                latitude: draftPin.lat,
-                longitude: draftPin.lng,
-                message: draftPin.message,
-              });
-              setDraftPin(null);
-              setShowForm(false);
-              setShowError(false);
-            }}
-          >
-            Uložit
-          </button>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => {
-              setDraftPin(null);
-              setShowForm(false);
-              setShowError(false);
-            }}
-          >
-            Zrušit
-          </button>
+            <div className="card-body pt-0">
+              <textarea
+                className={`form-control ${showError ? "is-invalid" : ""}`}
+                rows={3}
+                autoFocus
+                value={draftPin.message}
+                onChange={(e) =>
+                  setDraftPin({ ...draftPin, message: e.target.value })
+                }
+              />
+              <div className="d-flex justify-content-end gap-2 mt-2">
+                <button
+                  className="btn btn-sm btn-light"
+                  onClick={() => {
+                    setDraftPin(null);
+                    setShowForm(false);
+                  }}
+                >
+                  Zrušit
+                </button>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    if (!draftPin.message.trim()) {
+                      setShowError(true);
+                      return;
+                    }
+                    createPinMutation.mutate({
+                      latitude: draftPin.lat,
+                      longitude: draftPin.lng,
+                      message: draftPin.message,
+                    });
+                    setShowForm(false);
+                  }}
+                >
+                  Uložit
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
+
+      {showForm && (
+        <div
+          className="position-absolute w-100 h-100"
+          style={{
+            zIndex: 1500,
+            backgroundColor: "rgba(0,0,0,0.3)",
+            top: 0,
+            left: 0,
+          }}
+          onClick={() => {
+            setDraftPin(null);
+            setShowForm(false);
+          }}
+        />
+      )}
+
       {hoverPin && (
         <div
-          className="position-absolute bg-white p-3 border rounded"
+          className="position-absolute bg-white p-3 border rounded shadow-sm"
           style={{
             top: hoverPosition.y,
             left: hoverPosition.x,
-            zIndex: 1000,
-            minWidth: "200px",
+            zIndex: 1050,
+            maxWidth: "250px",
             pointerEvents: "none",
+            transform: "translate(-50%, -102%) translateY(55px)",
           }}
         >
-          <div>{hoverPin.message}</div>
+          <div className="small">{hoverPin.message}</div>
         </div>
       )}
     </div>
