@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { usePins, useCreatePin } from "../hooks/usePins";
 import { MapContainer, TileLayer, useMapEvents, useMap } from "react-leaflet";
-import { Marker, Popup } from "react-leaflet";
+import { Marker, Popup, Rectangle } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
@@ -36,13 +36,19 @@ export default function MapLeaflet() {
   const { data: pins = [] } = usePins();
   const createPinMutation = useCreatePin();
 
+  let isOverlay = true;
+
   function MapClickHandler({ onClick }) {
     const map = useMap();
 
     const [draftPin, setDraftPin] = useState(null);
     const [showError, setShowError] = useState(false);
+
     useMapEvents({
       click(e) {
+        if (isOverlay == false) isOverlay = true;
+        else isOverlay = false;
+
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
 
@@ -61,110 +67,107 @@ export default function MapLeaflet() {
     const handleEsc = (e) => {
       if (e.key === "Escape") {
         setDraftPin(null);
+        isOverlay = true;
       }
     };
     window.addEventListener("keydown", handleEsc);
 
-    return draftPin === null ? null : (
-      <Marker
-        key={`${draftPin.lat}-${draftPin.lng}`}
-        position={[draftPin.lat, draftPin.lng]}
-        icon={previewPin}
-        eventHandlers={{
-          add: (e) => {
-            e.target.openPopup();
-          },
-        }}
-      >
-        <Popup
-          closeButton={false}
-          autoClose={false}
-          closeOnClick={false}
-          className="custom-popup"
+    return draftPin === null || isOverlay ? null : (
+      <>
+        <Marker
+          key={`${draftPin.lat}-${draftPin.lng}`}
+          position={[draftPin.lat, draftPin.lng]}
+          icon={previewPin}
+          eventHandlers={{
+            add: (e) => {
+              e.target.openPopup();
+            },
+          }}
         >
-          <div style={{ width: "300px" }} onClick={(e) => e.stopPropagation()}>
-            <div className="card shadow-lg border-0">
-              <div className="card-header bg-white border-0 py-2 d-flex justify-content-between align-items-center">
-                <strong className="small">Nová zpráva</strong>
-                <button
-                  className="btn-close"
-                  onClick={() => {
-                    setDraftPin(null);
-                  }}
-                />
-              </div>
-
-              <div className="card-body pt-0">
-                <textarea
-                  className={`form-control ${showError ? "is-invalid" : ""}`}
-                  rows={3}
-                  autoFocus
-                  ref={textareaRef}
-                />
-
-                <div className="d-flex justify-content-end gap-2 mt-2">
+          <Popup
+            closeButton={false}
+            autoClose={false}
+            closeOnClick={false}
+            offset={[0, -20]}
+            className="custom-form"
+          >
+            <div
+              style={{ width: "300px" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="card shadow-lg border-0">
+                <div className="card-header bg-white border-0 py-2 d-flex justify-content-between align-items-center">
+                  <strong className="small">Nová zpráva</strong>
                   <button
-                    className="btn btn-sm btn-light"
+                    className="btn-close"
                     onClick={() => {
                       setDraftPin(null);
                     }}
-                  >
-                    Zrušit
-                  </button>
+                  />
+                </div>
 
-                  <button
-                    className="btn btn-sm btn-primary"
-                    onClick={() => {
-                      draftPin.message = textareaRef.current.value;
-                      if (!draftPin.message.trim()) {
-                        setShowError(true);
-                        return;
-                      }
-                      createPinMutation.mutate({
-                        latitude: draftPin.lat,
-                        longitude: draftPin.lng,
-                        message: draftPin.message,
-                      });
-                      setDraftPin(null);
-                    }}
-                  >
-                    Uložit
-                  </button>
+                <div className="card-body pt-0">
+                  <textarea
+                    className={`form-control ${showError ? "is-invalid" : ""}`}
+                    rows={3}
+                    autoFocus
+                    ref={textareaRef}
+                  />
+
+                  <div className="d-flex justify-content-end gap-2 mt-2">
+                    <button
+                      className="btn btn-sm btn-light"
+                      onClick={() => {
+                        setDraftPin(null);
+                      }}
+                    >
+                      Zrušit
+                    </button>
+
+                    <button
+                      className="btn btn-sm btn-primary"
+                      onClick={() => {
+                        draftPin.message = textareaRef.current.value;
+                        if (!draftPin.message.trim()) {
+                          setShowError(true);
+                          return;
+                        }
+                        createPinMutation.mutate({
+                          latitude: draftPin.lat,
+                          longitude: draftPin.lng,
+                          message: draftPin.message,
+                        });
+                        setDraftPin(null);
+                      }}
+                    >
+                      Uložit
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Popup>
-      </Marker>
+          </Popup>
+        </Marker>
+        <Rectangle
+          bounds={[
+            [46.5, 8],
+            [53.5, 20],
+          ]}
+          pathOptions={{
+            fillColor: "black",
+            fillOpacity: 0.45,
+            stroke: false,
+          }}
+          eventHandlers={{
+            click: (e) => {
+              e.originalEvent.stopPropagation();
+              setDraftPin(null);
+            },
+          }}
+        />
+      </>
     );
   }
-
-  // Lock map interaction when form is shown
-  useEffect(() => {
-    // Only initialize map if not already initialized
-    if (!mapRef.current) return;
-
-    // Get map
-    const map = mapRef.current;
-
-    if (showForm) {
-      map.dragging.disable();
-      map.touchZoom.disable();
-      map.doubleClickZoom.disable();
-      map.scrollWheelZoom.disable();
-      map.boxZoom.disable();
-      map.keyboard.disable();
-      /* if (map.tap) map.tap.disable(); */
-    } else {
-      map.dragging.enable();
-      map.touchZoom.enable();
-      map.doubleClickZoom.enable();
-      map.scrollWheelZoom.enable();
-      map.boxZoom.enable();
-      map.keyboard.enable();
-      /* if (map.tap) map.tap.enable(); */
-    }
-  }, [showForm]);
 
   return (
     <MapContainer
