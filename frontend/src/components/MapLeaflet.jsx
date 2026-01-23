@@ -7,19 +7,55 @@ import MarkerClusterGroup from "react-leaflet-markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
+function MapyLogo() {
+  const map = useMap();
+
+  // Only add the control if it hasn't been added yet
+  if (!map.hasLogoControl) {
+    const LogoControl = L.Control.extend({
+      options: { position: "bottomleft" },
+      onAdd: function () {
+        const container = L.DomUtil.create("div");
+        const link = L.DomUtil.create("a", "", container);
+        link.setAttribute("href", "https://www.mapy.cz");
+        link.setAttribute("target", "_blank");
+        link.innerHTML = '<img src="https://api.mapy.com/img/api/logo.svg" width="100px" />';
+        L.DomEvent.disableClickPropagation(link);
+        return container;
+      },
+    });
+
+    new LogoControl().addTo(map);
+    map.hasLogoControl = true; // mark that logo was added
+  }
+
+  return null;
+}
+
 export default function MapLeaflet() {
   // Icons
-  const savedPin = L.icon({
-    iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-  });
+  const createCustomIcon = (mainColor, innerColor) => {
+    return L.divIcon({
+      className: "custom-pin",
+      iconAnchor: [16, 32],
+      // popupAnchor [x, y]: 0 is centered horizontally,
+      // -32 moves the popup tip to the very top of the pin.
+      popupAnchor: [0, -32],
+      iconSize: [32, 32],
+      html: `
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 2px rgba(0,0,0,0.3));">
+        <path d="M12 21.325C12 21.325 19 14.561 19 9C19 5.13401 15.866 2 12 2C8.13401 2 5 5.13401 5 9C5 14.561 12 21.325 12 21.325Z" fill="${mainColor}"/>
+        <circle cx="12" cy="9" r="3.5" fill="${innerColor}"/>
+      </svg>
+    `,
+    });
+  };
 
-  const previewPin = L.icon({
-    iconUrl: "https://maps.google.com/mapfiles/ms/icons/yellow-dot.png",
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-  });
+  // Ikona pro uložené piny (Faded Copper s krémovým středem)
+  const savedPin = createCustomIcon("#b08968", "#ede0d4");
+
+  // Ikona pro náhled/rozepsaný pin (Tan s tmavším středem, aby se odlišil)
+  const previewPin = createCustomIcon("#7f5539", "#ede0d4");
 
   // Pins
   const textareaRef = useRef(null); // message formu pro přidanfi pinu
@@ -84,19 +120,10 @@ export default function MapLeaflet() {
             },
           }}
         >
-          <Popup
-            closeButton={false}
-            autoClose={false}
-            closeOnClick={false}
-            offset={[0, -20]}
-            className="custom-form"
-          >
-            <div
-              style={{ width: "300px" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="card shadow-lg border-0">
-                <div className="card-header bg-white border-0 py-2 d-flex justify-content-between align-items-center">
+          <Popup closeButton={false} autoClose={false} closeOnClick={false} className="custom-form">
+            <div style={{ width: "300px" }} onClick={(e) => e.stopPropagation()}>
+              <div className="card shadow-lg">
+                <div className="card-header d-flex justify-content-between align-items-center">
                   <strong className="small">Nová zpráva</strong>
                   <button
                     className="btn-close"
@@ -116,7 +143,7 @@ export default function MapLeaflet() {
 
                   <div className="d-flex justify-content-end gap-2 mt-2">
                     <button
-                      className="btn btn-sm btn-light"
+                      className="btn btn-sm btn-secondary"
                       onClick={() => {
                         setDraftPin(null);
                       }}
@@ -150,8 +177,8 @@ export default function MapLeaflet() {
         </Marker>
         <Rectangle
           bounds={[
-            [46.5, 8],
-            [53.5, 20],
+            [45.0, 5.0],
+            [55.0, 25.0],
           ]}
           pathOptions={{
             fillColor: "black",
@@ -172,80 +199,32 @@ export default function MapLeaflet() {
   return (
     <MapContainer
       center={[49.8, 15.5]}
-      zoom={7}
+      zoom={8}
       minZoom={8}
       maxZoom={22}
       maxBounds={[
         [48.55, 12.09],
         [51.06, 18.87],
       ]}
-      style={{ height: "100vh", position: "relative" }}
+      className="dark-theme"
     >
       <TileLayer
         url={`https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}?apikey=${import.meta.env.VITE_MAP_API_KEY}`}
         attribution='<a href="https://api.mapy.com/copyright" target="_blank">&copy; Seznam.cz</a>'
       />
+      <MapyLogo />
       <MapClickHandler />
-      <MarkerClusterGroup>
+      <MarkerClusterGroup showCoverageOnHover={false}>
         {pins.map((pin) => (
-          <Marker
-            key={pin.id}
-            position={[pin.latitude, pin.longitude]}
-            icon={savedPin}
-            eventHandlers={{
-              mouseover: (e) => {
-                e.target.openPopup();
-              },
-              mouseout: (e) => {
-                e.target.closePopup();
-              },
-            }}
-          >
-            <Popup
-              closeButton={false}
-              autoClose={false}
-              closeOnClick={false}
-              offset={[0, -20]}
-            >
-              <div style={{ width: "200px", pointerEvents: "none" }}>
-                {pin.message}
+          <Marker key={pin.id} position={[pin.latitude, pin.longitude]} icon={savedPin}>
+            <Popup closeButton={false} autoClose={false} closeOnClick={false}>
+              <div className="pin-message">
+                <p>{pin.message}</p>
               </div>
             </Popup>
           </Marker>
         ))}
       </MarkerClusterGroup>
-      {/* 
-      {draftPin && (
-        <div
-          className="position-absolute w-100 h-100"
-          style={{
-            zIndex: 999, // vyšší než mapa, ale nižší než popup (popup má defaultně 1000+)
-            backgroundColor: "rgba(0,0,0,0.3)",
-            top: 0,
-            left: 0,
-          }}
-          onClick={() => {
-            setDraftPin(null); // odstraní draft pin
-            setShowForm(false); // zavře popup
-          }}
-        />
-      )} */}
-
-      {/* {hoverPin && (
-        <div
-          className="position-absolute bg-white p-3 border rounded shadow-sm"
-          style={{
-            top: hoverPosition.y,
-            left: hoverPosition.x,
-            zIndex: 1050,
-            maxWidth: "250px",
-            pointerEvents: "none",
-            transform: "translate(-50%, -102%) translateY(55px)",
-          }}
-        >
-          <div className="small">{hoverPin.message}</div>
-        </div>
-      )} */}
     </MapContainer>
   );
 }

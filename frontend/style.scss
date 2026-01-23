@@ -1,0 +1,200 @@
+$color-beige-light: #ede0d4;
+$color-beige: #e6ccb2;
+$color-sand: #ddb892;
+$color-brown-light: #b08968;
+$color-brown: #7f5539;
+
+$color-off-white: #fdfaf7;
+$cluster-opacity: rgba(176, 137, 104, 0.4);
+$welcome-opacity: rgba(237, 224, 212, 0.918);
+
+.welcome-message {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+
+  background-color: $welcome-opacity;
+  border: 2px solid $color-brown-light;
+  padding: 10px 25px;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  pointer-events: unset;
+
+  h2 {
+    color: $color-brown;
+    padding: 0;
+    margin: 0;
+  }
+
+  p {
+    color: $color-brown-light;
+    margin: 0;
+  }
+}
+
+.dark-theme {
+  height: 100vh;
+  position: relative;
+  border: 0;
+
+  .custom-pin {
+    background: none;
+    border: none;
+  }
+  svg {
+    display: block;
+  }
+  .pin-message {
+    word-break: break-all;
+  }
+  .custom-form {
+    .leaflet-popup-tip {
+      background-color: $color-beige;
+    }
+    .card {
+      background-color: $color-beige;
+      border: none;
+
+      &-header {
+        background-color: $color-sand;
+        color: $color-brown;
+      }
+      .btn {
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+        border: 1px solid transparent;
+
+        &:focus {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(176, 137, 104, 0.3);
+        }
+      }
+
+      .btn-primary {
+        background-color: $color-brown-light;
+        color: $color-beige-light;
+
+        &:hover {
+          background-color: $color-brown;
+          transform: translateY(-1px);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+
+      .btn-light,
+      .btn-secondary {
+        background-color: $color-sand;
+        color: $color-brown;
+
+        &:hover {
+          transform: translateY(-1px);
+          background-color: $color-beige;
+          border-color: $color-brown;
+        }
+        &:active {
+          transform: translateY(0);
+        }
+      }
+      .btn-close:active,
+      :focus {
+        box-shadow: 0 0 0 3px rgba(176, 137, 104, 0.3);
+      }
+    }
+
+    textarea {
+      background-color: $color-beige-light;
+      border: 1px solid $color-brown-light;
+      color: $color-brown;
+      transition: box-shadow 0.2s ease-in-out;
+
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(176, 137, 104, 0.3);
+        border-color: $color-brown;
+      }
+    }
+  }
+  &.leaflet-container {
+    background-color: $color-beige-light;
+  }
+
+  .leaflet-tile-pane {
+    filter: sepia(40%) saturate(80%) brightness(110%) contrast(95%);
+    mix-blend-mode: multiply;
+    opacity: 0.9;
+  }
+
+  .leaflet-popup {
+    background-color: $color-beige-light;
+    border-radius: 20px;
+    &-content {
+      color: $color-brown;
+    }
+    &-content-wrapper {
+      color: $color-brown;
+    }
+
+    &-tip {
+      background: none;
+      background-color: $color-beige-light;
+    }
+  }
+
+  .custom-form {
+    .card {
+      background-color: $color-beige;
+
+      &-header {
+        background-color: $color-beige;
+        color: $color-brown;
+        border: 0;
+      }
+    }
+
+    textarea {
+      background-color: $color-beige-light;
+
+      color: $color-brown;
+    }
+    .leaflet-popup {
+      &-content {
+        margin: 0;
+      }
+      &-content-wrapper {
+        background: transparent;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0;
+      }
+    }
+  }
+
+  .marker-cluster {
+    &-small,
+    &-medium,
+    &-large {
+      background-color: $cluster-opacity;
+    }
+
+    div {
+      background-color: $color-brown-light;
+      color: $color-beige-light;
+    }
+  }
+
+  .leaflet-bar a {
+    background-color: $color-off-white;
+    color: $color-brown-light;
+
+    &:hover {
+      background-color: $color-sand;
+      color: $color-brown;
+    }
+  }
+}
