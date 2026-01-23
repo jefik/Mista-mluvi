@@ -1,4 +1,5 @@
 $color-beige-light: #ede0d4;
+$color-beige-lighter: #f0e6dd;
 $color-beige: #e6ccb2;
 $color-sand: #ddb892;
 $color-brown-light: #b08968;
@@ -35,6 +36,7 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
   }
 }
 
+// Map
 .dark-theme {
   height: 100vh;
   position: relative;
@@ -43,24 +45,47 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
   .custom-pin {
     background: none;
     border: none;
+    outline: none;
   }
   svg {
     display: block;
+    &:focus {
+      outline: none;
+    }
   }
   .pin-message {
     word-break: break-all;
   }
+
+  // Pin form
   .custom-form {
-    .leaflet-popup-tip {
-      background-color: $color-beige;
+    .leaflet-popup-content-wrapper {
+      background: transparent !important;
+      box-shadow: none !important;
+      padding: 0 !important;
     }
+
+    .leaflet-popup-content {
+      margin: 0 !important;
+    }
+
+    .leaflet-popup-tip {
+      background-color: $color-beige-light !important;
+      box-shadow: none !important;
+      border: 1px solid $color-brown-light;
+    }
+
     .card {
-      background-color: $color-beige;
-      border: none;
+      background-color: $color-beige-light;
+
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid $color-brown-light;
 
       &-header {
-        background-color: $color-sand;
+        background-color: $color-beige-light;
         color: $color-brown;
+        border: 0;
       }
       .btn {
         font-weight: 600;
@@ -108,7 +133,7 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
     }
 
     textarea {
-      background-color: $color-beige-light;
+      background-color: $color-beige-lighter;
       border: 1px solid $color-brown-light;
       color: $color-brown;
       transition: box-shadow 0.2s ease-in-out;
@@ -120,58 +145,31 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
       }
     }
   }
-  &.leaflet-container {
-    background-color: $color-beige-light;
-  }
 
+  // Overlay for creating pins
   .leaflet-tile-pane {
     filter: sepia(40%) saturate(80%) brightness(110%) contrast(95%);
     mix-blend-mode: multiply;
     opacity: 0.9;
   }
 
+  // Message of pins
   .leaflet-popup {
-    background-color: $color-beige-light;
-    border-radius: 20px;
+    .leaflet-popup-content-wrapper {
+      background-color: $color-beige-lighter;
+      color: $color-brown;
+      border-radius: 20px;
+    }
+    .leaflet-popup-tip {
+      background-color: $color-beige-lighter;
+      border: 1px solid $color-brown-light;
+    }
+
     &-content {
       color: $color-brown;
     }
     &-content-wrapper {
       color: $color-brown;
-    }
-
-    &-tip {
-      background: none;
-      background-color: $color-beige-light;
-    }
-  }
-
-  .custom-form {
-    .card {
-      background-color: $color-beige;
-
-      &-header {
-        background-color: $color-beige;
-        color: $color-brown;
-        border: 0;
-      }
-    }
-
-    textarea {
-      background-color: $color-beige-light;
-
-      color: $color-brown;
-    }
-    .leaflet-popup {
-      &-content {
-        margin: 0;
-      }
-      &-content-wrapper {
-        background: transparent;
-        box-shadow: none;
-        border-radius: 0;
-        padding: 0;
-      }
     }
   }
 
@@ -188,6 +186,7 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
     }
   }
 
+  // + and - icons on map
   .leaflet-bar a {
     background-color: $color-off-white;
     color: $color-brown-light;
@@ -197,4 +196,10 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
       color: $color-brown;
     }
   }
+}
+
+// Map is locked
+.map-locked .leaflet-control-zoom {
+  pointer-events: none;
+  opacity: 30%;
 }
