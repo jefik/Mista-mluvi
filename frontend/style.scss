@@ -8,31 +8,32 @@ $color-brown: #7f5539;
 $color-off-white: #fdfaf7;
 $cluster-opacity: rgba(176, 137, 104, 0.4);
 $welcome-opacity: rgba(237, 224, 212, 0.918);
+.app-container {
+  height: 100vh;
+  position: relative;
+  .welcome-message {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background-color: $welcome-opacity;
+    border: 2px solid $color-brown-light;
+    padding: 10px 25px;
+    border-radius: 50px;
+    text-align: center;
+    pointer-events: unset;
 
-.welcome-message {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
+    h2 {
+      color: $color-brown;
+      padding: 0;
+      margin: 0;
+    }
 
-  background-color: $welcome-opacity;
-  border: 2px solid $color-brown-light;
-  padding: 10px 25px;
-  border-radius: 50px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  pointer-events: unset;
-
-  h2 {
-    color: $color-brown;
-    padding: 0;
-    margin: 0;
-  }
-
-  p {
-    color: $color-brown-light;
-    margin: 0;
+    p {
+      color: $color-brown-light;
+      margin: 0;
+    }
   }
 }
 
@@ -41,7 +42,6 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
   height: 100vh;
   position: relative;
   border: 0;
-
   .custom-pin {
     background: none;
     border: none;
@@ -59,6 +59,24 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
 
   // Pin form
   .custom-form {
+    @keyframes popupFadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    // Animation for making pin popup
+    .card-layout,
+    .leaflet-popup-tip {
+      animation: popupFadeIn 0.2s linear forwards !important;
+    }
+
+    // Resets for leaflet components
+    &.leaflet-popup {
+      transition: none !important;
+    }
     .leaflet-popup-content-wrapper {
       background: transparent !important;
       box-shadow: none !important;
@@ -75,60 +93,89 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
       border: 1px solid $color-brown-light;
     }
 
-    .card {
-      background-color: $color-beige-light;
-
-      border-radius: 20px;
-      overflow: hidden;
-      border: 1px solid $color-brown-light;
-
-      &-header {
+    // Popup for making pin
+    .card-layout {
+      width: 300px;
+      .card {
         background-color: $color-beige-light;
-        color: $color-brown;
-        border: 0;
-      }
-      .btn {
-        font-weight: 600;
-        transition: all 0.2s ease-in-out;
-        border: 1px solid transparent;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid $color-brown-light;
 
-        &:focus {
-          outline: none;
+        &-header {
+          background-color: $color-beige-light;
+          color: $color-brown;
+          border: 0;
+
+          h6 {
+            font-weight: 600;
+            padding: 0;
+            margin: 0;
+          }
+        }
+        .btn {
+          font-weight: 600;
+          transition: all 0.2s ease-in-out;
+          border: 1px solid transparent;
+
+          &:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(176, 137, 104, 0.3);
+          }
+        }
+
+        .btn-primary {
+          background-color: $color-brown-light;
+          color: $color-beige-light;
+
+          &:hover {
+            background-color: $color-brown;
+            transform: translateY(-1px);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
+
+        .btn-light,
+        .btn-secondary {
+          background-color: $color-sand;
+          color: $color-brown;
+
+          &:hover {
+            transform: translateY(-1px);
+            background-color: $color-beige;
+            border-color: $color-brown;
+          }
+          &:active {
+            transform: translateY(0);
+          }
+        }
+        .btn-close:active,
+        :focus {
           box-shadow: 0 0 0 3px rgba(176, 137, 104, 0.3);
         }
-      }
+        .btn-custom-close {
+          background: none;
+          border: none;
+          padding: 5px;
+          line-height: 0;
+          cursor: pointer;
+          color: $color-brown-light;
+          transition: color 0.2s ease;
 
-      .btn-primary {
-        background-color: $color-brown-light;
-        color: $color-beige-light;
-
-        &:hover {
-          background-color: $color-brown;
-          transform: translateY(-1px);
+          &:hover {
+            color: $color-brown;
+          }
+          &:active,
+          &:focus {
+            box-shadow: none;
+          }
+          svg {
+            display: block;
+          }
         }
-
-        &:active {
-          transform: translateY(0);
-        }
-      }
-
-      .btn-light,
-      .btn-secondary {
-        background-color: $color-sand;
-        color: $color-brown;
-
-        &:hover {
-          transform: translateY(-1px);
-          background-color: $color-beige;
-          border-color: $color-brown;
-        }
-        &:active {
-          transform: translateY(0);
-        }
-      }
-      .btn-close:active,
-      :focus {
-        box-shadow: 0 0 0 3px rgba(176, 137, 104, 0.3);
       }
     }
 
@@ -137,26 +184,26 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
       border: 1px solid $color-brown-light;
       color: $color-brown;
       transition: box-shadow 0.2s ease-in-out;
+      resize: none;
 
       &:focus {
         outline: none;
         box-shadow: 0 0 0 3px rgba(176, 137, 104, 0.3);
         border-color: $color-brown;
       }
+      &::placeholder {
+        color: $color-brown;
+        font-size: small;
+        padding-top: 3px;
+      }
     }
   }
 
-  // Overlay for creating pins
-  .leaflet-tile-pane {
-    filter: sepia(40%) saturate(80%) brightness(110%) contrast(95%);
-    mix-blend-mode: multiply;
-    opacity: 0.9;
-  }
-
-  // Message of pins
-  .leaflet-popup {
+  // Pins message
+  .custom-message {
     .leaflet-popup-content-wrapper {
       background-color: $color-beige-lighter;
+      border: 1px solid $color-brown-light;
       color: $color-brown;
       border-radius: 20px;
     }
@@ -165,6 +212,20 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
       border: 1px solid $color-brown-light;
     }
 
+    .leaflet-marker-icon {
+      .marker-cluster {
+        &-small,
+        &-medium,
+        &-large {
+          background-color: $cluster-opacity;
+        }
+
+        div {
+          background-color: $color-brown-light;
+          color: $color-beige-light;
+        }
+      }
+    }
     &-content {
       color: $color-brown;
     }
@@ -186,6 +247,13 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
     }
   }
 
+  // Overlay for creating pins
+  .leaflet-tile-pane {
+    filter: sepia(40%) saturate(80%) brightness(110%) contrast(95%);
+    mix-blend-mode: multiply;
+    opacity: 0.9;
+  }
+
   // + and - icons on map
   .leaflet-bar a {
     background-color: $color-off-white;
@@ -198,8 +266,28 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
   }
 }
 
+// Copyright on the bottom right
+.leaflet-control-attribution.leaflet-control {
+  background-color: $color-beige-lighter !important;
+
+  a {
+    background-color: transparent !important;
+    color: $color-brown !important;
+    text-decoration: none !important;
+
+    &:hover {
+      text-decoration: underline !important;
+    }
+  }
+}
 // Map is locked
-.map-locked .leaflet-control-zoom {
-  pointer-events: none;
-  opacity: 30%;
+.map-locked {
+  .leaflet-control-zoom {
+    pointer-events: none;
+    opacity: 30%;
+  }
+}
+// No cursor outside of czech republic
+.geojson-nocursor {
+  cursor: default !important;
 }
