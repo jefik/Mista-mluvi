@@ -94,6 +94,16 @@ export default function MapLeaflet() {
     };
   }, []);
 
+  // Detect if its under 625 for mobile and 1225 for bigger devices
+  const isMobile = window.innerWidth < 625;
+  const isTablet = window.innerWidth >= 625 && window.innerWidth < 1225;
+
+  // Adjust values of map zooms for responsivity
+  const MAP_SETTINGS = {
+    initialZoom: isMobile ? 6.5 : isTablet ? 7 : 8,
+    minZoom: isMobile ? 6.5 : isTablet ? 7 : 8,
+  };
+
   function MapClickHandler() {
     const map = useMap();
     const [draftPin, setDraftPin] = useState(null);
@@ -102,7 +112,7 @@ export default function MapLeaflet() {
     // Func to unlock and lock dragging on map, if map havent been zoomed
     const updateDragging = () => {
       const zoom = map.getZoom();
-      if (zoom <= 8) {
+      if (zoom <= MAP_SETTINGS.minZoom) {
         map.dragging.disable();
       } else if (!draftPin) {
         map.dragging.enable();
@@ -280,9 +290,10 @@ export default function MapLeaflet() {
   return (
     <MapContainer
       center={[49.8, 15.5]}
-      zoom={8}
-      minZoom={8}
+      zoom={MAP_SETTINGS.initialZoom}
+      minZoom={MAP_SETTINGS.minZoom}
       maxZoom={22}
+      zoomSnap={0.5} // Enable 0.5 values
       maxBounds={[
         [48.55, 12.09],
         [51.06, 18.87],

@@ -36,7 +36,21 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
     }
   }
 }
+@media (max-width: 625px) {
+  .app-container {
+    .welcome-message {
+      bottom: 45px;
+      width: 85%;
+      h2 {
+        font-size: 1.125rem;
+      }
 
+      p {
+        font-size: 0.875rem;
+      }
+    }
+  }
+}
 // Map
 .dark-theme {
   height: 100vh;
