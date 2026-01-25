@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { usePins, useCreatePin } from "../hooks/usePins";
 import { MapContainer, TileLayer, useMapEvents, useMap, GeoJSON } from "react-leaflet";
@@ -6,58 +6,17 @@ import { Marker, Popup, Rectangle } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
-import czechGeoJSON from "/data/czech_republic.json";
-import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import { point as turfPoint, polygon as turfPolygon } from "@turf/helpers";
-
-function MapyLogo() {
-  const map = useMap();
-
-  // Add mapy.cz logo only if its not there
-  if (!map.hasLogoControl) {
-    const LogoControl = L.Control.extend({
-      options: { position: "bottomleft" },
-      onAdd: function () {
-        const container = L.DomUtil.create("div");
-        const link = L.DomUtil.create("a", "", container);
-        link.setAttribute("href", "https://www.mapy.cz");
-        link.setAttribute("target", "_blank");
-        link.innerHTML = '<img src="https://api.mapy.com/img/api/logo.svg" width="100px" />';
-        L.DomEvent.disableClickPropagation(link);
-        return container;
-      },
-    });
-
-    // Logo added
-    new LogoControl().addTo(map);
-    map.hasLogoControl = true;
-  }
-
-  return null;
-}
+import { savedPin, previewPin } from "../utils/mapIcons";
+import WorldOverlay from "./WorldOverlay";
+import MapyLogo from "./MapyLogo";
+import { isInsideCzechia } from "../utils/GeoUtils";
+import { getValidationError } from "../utils/PinValidation";
+import { useAntiSpamTimer } from "../hooks/useAntiSpamTimer";
+import { useMapControls } from "../hooks/useMapControls";
+import { useWindowSize } from "../hooks/useWindowSize";
 
 export default function MapLeaflet() {
-  // Custom icons
-  const createCustomIcon = (mainColor, innerColor) => {
-    return L.divIcon({
-      className: "custom-pin",
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-      iconSize: [32, 32],
-      html: `
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 2px rgba(0,0,0,0.3));">
-        <path d="M12 21.325C12 21.325 19 14.561 19 9C19 5.13401 15.866 2 12 2C8.13401 2 5 5.13401 5 9C5 14.561 12 21.325 12 21.325Z" fill="${mainColor}"/>
-        <circle cx="12" cy="9" r="3.5" fill="${innerColor}"/>
-      </svg>
-    `,
-    });
-  };
-
-  // Icon for saved pins (colors from scss)
-  const savedPin = createCustomIcon("#b08968", "#ede0d4");
-  // Icon for draft pins (colors from scss)
-  const previewPin = createCustomIcon("#7f5539", "#ede0d4");
-
   // Pins message
   const textareaRef = useRef(null);
 
@@ -65,72 +24,32 @@ export default function MapLeaflet() {
   const { data: pins = [] } = usePins();
   const createPinMutation = useCreatePin();
 
-  // Func to create black overlay with hole in shape of czech republic
-  const worldOverlay = useMemo(() => {
-    // Outer boundary (world boundary)
-    const worldCoords = [
-      [
-        [-180, 90], // North west
-        [-180, -90], // South west
-        [180, -90], // South east
-        [180, 90], // North east
-        [-180, 90], // Close
-      ],
-    ];
-
-    // Extract coordinates of czech republic
-    const rawCzechCoords = czechGeoJSON.features[0].geometry.coordinates;
-
-    // Reverse czech republic coordinates to create hole
-    const czechHoles = [rawCzechCoords[0].toReversed()];
-
-    return {
-      type: "Feature",
-      geometry: {
-        type: "Polygon",
-        // First coords are outer, second coords are inside (the hole - czech republic)
-        coordinates: [...worldCoords, ...czechHoles],
-      },
-    };
-  }, []);
-
   // Detect if its under 625 for mobile and 1225 for bigger devices
-  const isMobile = window.innerWidth < 625;
-  const isTablet = window.innerWidth >= 625 && window.innerWidth < 1225;
-
+  const { isMobile, isTablet } = useWindowSize();
   // Adjust values of map zooms for responsivity
   const MAP_SETTINGS = {
     initialZoom: isMobile ? 6.5 : isTablet ? 7 : 8,
     minZoom: isMobile ? 6.5 : isTablet ? 7 : 8,
   };
 
+  // --- Map click ---
   // Func to handle every interaction on the map
   function MapClickHandler() {
+    // --- Anti spam ---
     // For anti spam
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [now, setNow] = useState(Date.now());
     const botCatchRef = useRef(null);
     const [inputMessage, setInputMessage] = useState("");
+    // Prevent spam, checks if the user is in a set coldown 10s
+    const { isWaiting, remaining } = useAntiSpamTimer(10000); // using hook
 
+    // --- Map ---
     // For map
     const map = useMap();
     const [draftPin, setDraftPin] = useState(null);
-    const [showError, setShowError] = useState(false);
+    const setMapLock = useMapControls(map);
 
-    // Rerender every second to update remaining time
-    useEffect(() => {
-      const interval = setInterval(() => setNow(Date.now()), 1000);
-      return () => clearInterval(interval);
-    }, []);
-
-    // Get the time of the last saved pin from localstorage
-    const lastPinTime = parseInt(localStorage.getItem("last_pin_timestamp") || 0);
-
-    const waitTime = 10000;
-    // Calculate the difference between now and release time
-    const remaining = Math.ceil((lastPinTime + waitTime - now) / 1000);
-
-    const isWaiting = remaining > 0;
+    // --- Lock map ---
     // Func to unlock and lock dragging on map, if map havent been zoomed
     const updateDragging = () => {
       const zoom = map.getZoom();
@@ -143,6 +62,7 @@ export default function MapLeaflet() {
     // Check instantly if map wasnt zoomed on load
     updateDragging();
 
+    // --- Save button ---
     // Func for handling save button
     const handleSave = () => {
       setInputMessage("");
@@ -153,31 +73,17 @@ export default function MapLeaflet() {
         return;
       }
 
+      // --- Inputs validations ---
       // Message from pin
       const message = textareaRef.current?.value.trim();
-
-      // Inputs validations
-      // Validation for length
-      if (message.length > 1000) {
-        setInputMessage("Zpráva je moc dlouhá (max 1000 znaků)");
-        return;
-      }
-
-      // Validation for forbidden chars
-      const allowedChars = /^[a-zA-Z0-9á-žÁ-Ž\s@.!?,\-]+$/;
-      if (message.length > 0 && !allowedChars.test(message)) {
-        setInputMessage("Zakázanéznaky (pouze povolené @.!?,-)");
-        return;
-      }
-
-      // Validation for empty message
-      if (!message) {
-        setShowError(true);
+      // Get validation error string
+      const error = getValidationError(message);
+      if (error) {
+        setInputMessage(error);
         return;
       }
 
       setIsSubmitting(true);
-
       createPinMutation.mutate(
         {
           latitude: draftPin.lat,
@@ -201,46 +107,6 @@ export default function MapLeaflet() {
       );
     };
 
-    // Locking/unlocking map
-    const setMapLock = (isLocked) => {
-      // Get map container on initial
-      const mapContainer = map.getContainer();
-
-      // If map is locked stop all actions on map
-      const action = isLocked ? "disable" : "enable";
-      map.dragging[action]();
-      map.touchZoom[action]();
-      map.doubleClickZoom[action]();
-      map.scrollWheelZoom[action]();
-      map.boxZoom[action]();
-      map.keyboard[action]();
-
-      // If map is locked set bigger maxbounds and/remove class for +- buttons
-      if (isLocked) {
-        // Setting bigger maxbounds for popups ONLY
-        map.setMaxBounds([
-          [45.0, 5.0],
-          [55.0, 25.0],
-        ]);
-        // + and - icons of map styling
-        mapContainer.classList.add("map-locked");
-      } else {
-        // Default maxbounds for czech republic
-        map.setMaxBounds([
-          [48.55, 12.09],
-          [51.06, 18.87],
-        ]);
-        // + and - icons of map styling
-        mapContainer.classList.remove("map-locked");
-      }
-    };
-
-    // Func to prevent clicking outside of czech republic
-    const czechBoundary = useMemo(() => {
-      const feature = czechGeoJSON.features[0].geometry.coordinates;
-      return turfPolygon(feature);
-    }, []);
-
     useMapEvents({
       zoomend: () => {
         updateDragging();
@@ -252,7 +118,7 @@ export default function MapLeaflet() {
 
         const pt = turfPoint([lng, lat]);
         // Check if click is outside of czech republic
-        if (!booleanPointInPolygon(pt, czechBoundary)) {
+        if (!isInsideCzechia(lat, lng)) {
           return;
         }
 
@@ -260,7 +126,6 @@ export default function MapLeaflet() {
         setMapLock(true);
 
         setDraftPin({ lat, lng, message: "", created_at: new Date().toISOString() });
-        setShowError(false);
       },
 
       // Escape handler to cancel pin creation
@@ -320,7 +185,6 @@ export default function MapLeaflet() {
                 </div>
 
                 <div className="card-body pt-0">
-                  {/* <p className="seconds-warning">{isWaiting ? `Další vzkaz můžete uložit za: ${remaining}s` : ""}</p> */}
                   <p className="seconds-warning">
                     {inputMessage ? inputMessage : isWaiting ? `Další vzkaz můžete uložit za ${remaining}s` : ""}
                   </p>
@@ -329,7 +193,7 @@ export default function MapLeaflet() {
                     <input ref={botCatchRef} type="text" id="name" name="name" tabIndex="-1" autoComplete="off" />
                   </div>
                   <textarea
-                    className={`form-control ${showError ? "is-invalid" : ""}`}
+                    className={`form-control ${inputMessage ? "is-invalid" : ""}`}
                     rows={3}
                     autoFocus
                     ref={textareaRef}
@@ -400,21 +264,7 @@ export default function MapLeaflet() {
       maxBoundsViscosity={1}
       renderer={L.svg({ padding: 3 })} // Rendering more outside then loaded map
     >
-      <GeoJSON
-        data={worldOverlay}
-        style={{
-          weight: 2,
-          color: "#7f5539",
-          fillColor: "black",
-          interactive: true,
-          className: "geojson-nocursor",
-        }}
-        eventHandlers={{
-          click: (e) => {
-            L.DomEvent.stopPropagation(e); // Prevent creating new pin under the overlay
-          },
-        }}
-      />
+      <WorldOverlay />
       <TileLayer
         url={`https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}?apikey=${import.meta.env.VITE_MAP_API_KEY}`}
         attribution='<a href="https://api.mapy.com/copyright" target="_blank">&copy; Seznam.cz</a>'
