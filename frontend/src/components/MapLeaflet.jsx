@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import "leaflet/dist/leaflet.css";
 import { usePins, useCreatePin } from "../hooks/usePins";
 import { MapContainer, TileLayer, useMapEvents, useMap, GeoJSON } from "react-leaflet";
@@ -104,11 +104,33 @@ export default function MapLeaflet() {
     minZoom: isMobile ? 6.5 : isTablet ? 7 : 8,
   };
 
+  // Func to handle every interaction on the map
   function MapClickHandler() {
+    // For anti spam
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [now, setNow] = useState(Date.now());
+    const botCatchRef = useRef(null);
+    const [inputMessage, setInputMessage] = useState("");
+
+    // For map
     const map = useMap();
     const [draftPin, setDraftPin] = useState(null);
     const [showError, setShowError] = useState(false);
 
+    // Rerender every second to update remaining time
+    useEffect(() => {
+      const interval = setInterval(() => setNow(Date.now()), 1000);
+      return () => clearInterval(interval);
+    }, []);
+
+    // Get the time of the last saved pin from localstorage
+    const lastPinTime = parseInt(localStorage.getItem("last_pin_timestamp") || 0);
+
+    const waitTime = 10000;
+    // Calculate the difference between now and release time
+    const remaining = Math.ceil((lastPinTime + waitTime - now) / 1000);
+
+    const isWaiting = remaining > 0;
     // Func to unlock and lock dragging on map, if map havent been zoomed
     const updateDragging = () => {
       const zoom = map.getZoom();
@@ -118,11 +140,68 @@ export default function MapLeaflet() {
         map.dragging.enable();
       }
     };
-
     // Check instantly if map wasnt zoomed on load
     updateDragging();
 
-    // Locking unlocking map
+    // Func for handling save button
+    const handleSave = () => {
+      setInputMessage("");
+      // Anti bot spam
+      if (botCatchRef.current?.value) {
+        setDraftPin(null);
+        setMapLock(false);
+        return;
+      }
+
+      // Message from pin
+      const message = textareaRef.current?.value.trim();
+
+      // Inputs validations
+      // Validation for length
+      if (message.length > 1000) {
+        setInputMessage("Zpráva je moc dlouhá (max 1000 znaků)");
+        return;
+      }
+
+      // Validation for forbidden chars
+      const allowedChars = /^[a-zA-Z0-9á-žÁ-Ž\s@.!?,\-]+$/;
+      if (message.length > 0 && !allowedChars.test(message)) {
+        setInputMessage("Zakázanéznaky (pouze povolené @.!?,-)");
+        return;
+      }
+
+      // Validation for empty message
+      if (!message) {
+        setShowError(true);
+        return;
+      }
+
+      setIsSubmitting(true);
+
+      createPinMutation.mutate(
+        {
+          latitude: draftPin.lat,
+          longitude: draftPin.lng,
+          message: message,
+          created_at: draftPin.created_at,
+        },
+        {
+          onSuccess: () => {
+            localStorage.setItem("last_pin_timestamp", Date.now().toString());
+            setDraftPin(null);
+            setMapLock(false);
+            setIsSubmitting(false);
+          },
+          onError: (error) => {
+            setIsSubmitting(false);
+            console.error("Chyba při ukládání:", error);
+            alert("Něco se nepovedlo. Zkuste to za chvíli.");
+          },
+        },
+      );
+    };
+
+    // Locking/unlocking map
     const setMapLock = (isLocked) => {
       // Get map container on initial
       const mapContainer = map.getContainer();
@@ -220,6 +299,7 @@ export default function MapLeaflet() {
               <div className="card shadow-lg">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <h6 className="">Zanechte vzkaz</h6>
+
                   <button
                     className="btn-custom-close"
                     onClick={() => {
@@ -240,14 +320,23 @@ export default function MapLeaflet() {
                 </div>
 
                 <div className="card-body pt-0">
+                  {/* <p className="seconds-warning">{isWaiting ? `Další vzkaz můžete uložit za: ${remaining}s` : ""}</p> */}
+                  <p className="seconds-warning">
+                    {inputMessage ? inputMessage : isWaiting ? `Další vzkaz můžete uložit za ${remaining}s` : ""}
+                  </p>
+
+                  <div className="card-input-nt">
+                    <input ref={botCatchRef} type="text" id="name" name="name" tabIndex="-1" autoComplete="off" />
+                  </div>
                   <textarea
                     className={`form-control ${showError ? "is-invalid" : ""}`}
                     rows={3}
                     autoFocus
                     ref={textareaRef}
                     placeholder="Co se vám honí hlavou..."
+                    id="pin-message"
+                    name="message"
                   />
-
                   <div className="d-flex justify-content-end gap-2 mt-2">
                     <button
                       className="btn btn-sm btn-secondary"
@@ -261,21 +350,8 @@ export default function MapLeaflet() {
 
                     <button
                       className="btn btn-sm btn-primary"
-                      onClick={() => {
-                        draftPin.message = textareaRef.current.value;
-                        if (!draftPin.message.trim()) {
-                          setShowError(true);
-                          return;
-                        }
-                        createPinMutation.mutate({
-                          latitude: draftPin.lat,
-                          longitude: draftPin.lng,
-                          message: draftPin.message,
-                          created_at: draftPin.created_at,
-                        });
-                        setDraftPin(null);
-                        setMapLock(false);
-                      }}
+                      onClick={handleSave}
+                      disabled={isWaiting || isSubmitting}
                     >
                       Uložit
                     </button>

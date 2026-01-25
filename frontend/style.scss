@@ -118,6 +118,12 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
             margin: 0;
           }
         }
+        .seconds-warning {
+          padding: 0;
+          margin: 0;
+          color: rgb(202, 28, 28);
+          padding-bottom: 4px;
+        }
         .btn {
           font-weight: 600;
           transition: all 0.2s ease-in-out;
@@ -295,6 +301,11 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
 // No cursor outside of czech republic
 .geojson-nocursor {
   cursor: default !important;
+}
+
+.card-input-nt {
+  position: absolute;
+  left: 5000px;
 }
 
 // MEDIA QUERIES
