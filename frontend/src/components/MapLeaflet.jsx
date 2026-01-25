@@ -124,6 +124,10 @@ export default function MapLeaflet() {
 
     // Locking unlocking map
     const setMapLock = (isLocked) => {
+      // Get map container on initial
+      const mapContainer = map.getContainer();
+
+      // If map is locked stop all actions on map
       const action = isLocked ? "disable" : "enable";
       map.dragging[action]();
       map.touchZoom[action]();
@@ -132,11 +136,22 @@ export default function MapLeaflet() {
       map.boxZoom[action]();
       map.keyboard[action]();
 
-      // + and - icons of map styling
-      const mapContainer = map.getContainer();
+      // If map is locked set bigger maxbounds and/remove class for +- buttons
       if (isLocked) {
+        // Setting bigger maxbounds for popups ONLY
+        map.setMaxBounds([
+          [45.0, 5.0],
+          [55.0, 25.0],
+        ]);
+        // + and - icons of map styling
         mapContainer.classList.add("map-locked");
       } else {
+        // Default maxbounds for czech republic
+        map.setMaxBounds([
+          [48.55, 12.09],
+          [51.06, 18.87],
+        ]);
+        // + and - icons of map styling
         mapContainer.classList.remove("map-locked");
       }
     };
@@ -165,7 +180,7 @@ export default function MapLeaflet() {
         // Lock the map when pin is beeing made
         setMapLock(true);
 
-        setDraftPin({ lat, lng, message: "" });
+        setDraftPin({ lat, lng, message: "", created_at: new Date().toISOString() });
         setShowError(false);
       },
 
@@ -194,7 +209,13 @@ export default function MapLeaflet() {
             },
           }}
         >
-          <Popup closeButton={false} autoClose={false} closeOnClick={false} className="custom-form">
+          <Popup
+            closeButton={false}
+            autoClose={false}
+            closeOnClick={false}
+            autoPanPadding={[50, 50]}
+            className="custom-form"
+          >
             <div className="card-layout" onClick={(e) => e.stopPropagation()}>
               <div className="card shadow-lg">
                 <div className="card-header d-flex justify-content-between align-items-center">
@@ -250,6 +271,7 @@ export default function MapLeaflet() {
                           latitude: draftPin.lat,
                           longitude: draftPin.lng,
                           message: draftPin.message,
+                          created_at: draftPin.created_at,
                         });
                         setDraftPin(null);
                         setMapLock(false);
@@ -307,7 +329,7 @@ export default function MapLeaflet() {
         style={{
           weight: 2,
           color: "#7f5539",
-          fillColor: "#0000009c",
+          fillColor: "black",
           interactive: true,
           className: "geojson-nocursor",
         }}
@@ -331,16 +353,31 @@ export default function MapLeaflet() {
             icon={savedPin}
             eventHandlers={{
               popupopen: (e) => {
+                const map = e.target._map;
+                map.setMaxBounds([
+                  [45.0, 5.0],
+                  [55.0, 25.0],
+                ]);
                 const popup = e.popup.getElement();
                 if (popup) {
                   popup.classList.add("custom-message");
                 }
               },
+              popupclose: (e) => {
+                const map = e.target._map;
+
+                // 3. Jakmile se popup zavře, vrátíme striktní hranice ČR
+                map.setMaxBounds([
+                  [48.55, 12.09],
+                  [51.06, 18.87],
+                ]);
+              },
             }}
           >
-            <Popup closeButton={false} autoClose={false} closeOnClick={false}>
+            <Popup closeButton={false} autoClose={false} closeOnClick={false} autoPanPadding={[50, 50]}>
               <div className="pin-message">
                 <p>{pin.message}</p>
+                <p className="pin-date">Zanecháno dne: {new Date(pin.created_at).toLocaleString("cs-CZ")}</p>
               </div>
             </Popup>
           </Marker>

@@ -11,6 +11,7 @@ export const usePins = () => {
         latitude: pin.latitude,
         longitude: pin.longitude,
         message: pin.message,
+        created_at: pin.created_at,
       })),
   });
 };

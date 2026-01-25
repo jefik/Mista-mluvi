@@ -36,21 +36,7 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
     }
   }
 }
-@media (max-width: 625px) {
-  .app-container {
-    .welcome-message {
-      bottom: 45px;
-      width: 85%;
-      h2 {
-        font-size: 1.125rem;
-      }
 
-      p {
-        font-size: 0.875rem;
-      }
-    }
-  }
-}
 // Map
 .dark-theme {
   height: 100vh;
@@ -69,6 +55,11 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
   }
   .pin-message {
     word-break: break-all;
+    .pin-date {
+      font-size: 0.675rem;
+      font-style: italic;
+      opacity: 0.7;
+    }
   }
 
   // Pin form
@@ -304,4 +295,21 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
 // No cursor outside of czech republic
 .geojson-nocursor {
   cursor: default !important;
+}
+
+// MEDIA QUERIES
+@media (max-width: 625px) {
+  .app-container {
+    .welcome-message {
+      bottom: 45px;
+      width: 85%;
+      h2 {
+        font-size: 1.125rem;
+      }
+
+      p {
+        font-size: 0.875rem;
+      }
+    }
+  }
 }
