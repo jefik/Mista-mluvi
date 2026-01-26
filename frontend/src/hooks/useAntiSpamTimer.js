@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function useAntiSpamTimer(waitTime = 10000) {
+export function useAntiSpamTimer(waitTime = 30000) {
   const [now, setNow] = useState(Date.now());
 
   // Rerender every second to update remaining time

@@ -41,7 +41,7 @@ export default function MapLeaflet() {
     const botCatchRef = useRef(null);
     const [inputMessage, setInputMessage] = useState("");
     // Prevent spam, checks if the user is in a set coldown 10s
-    const { isWaiting, remaining } = useAntiSpamTimer(10000); // using hook
+    const { isWaiting, remaining } = useAntiSpamTimer(30000); // using hook
 
     // --- Map ---
     // For map
@@ -122,6 +122,9 @@ export default function MapLeaflet() {
           return;
         }
 
+        // Reset error inputMessage when making new pin
+        setInputMessage("");
+
         // Lock the map when pin is beeing made
         setMapLock(true);
 
@@ -135,6 +138,7 @@ export default function MapLeaflet() {
           setMapLock(false);
           updateDragging();
         }
+        map.closePopup();
       },
     });
 
@@ -291,8 +295,6 @@ export default function MapLeaflet() {
               },
               popupclose: (e) => {
                 const map = e.target._map;
-
-                // 3. Jakmile se popup zavře, vrátíme striktní hranice ČR
                 map.setMaxBounds([
                   [48.55, 12.09],
                   [51.06, 18.87],

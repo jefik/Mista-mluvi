@@ -1,7 +1,18 @@
 import { Router } from "express";
 import db from "./db.js";
+import rateLimit from "express-rate-limit";
 
 const api = Router();
+
+//Rate limiting - spam, dos attacks
+const apiLimiter = rateLimit({
+  windowMs: 30 * 1000, // 30 seconds
+  max: 1, // max 1 request/min from same IP
+  message: { error: "Další vzkaz můžete poslat až za 30 sekund." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+/* app.use(apiLimiter); */
 
 /* --------------------------------------------------------------------------------------------
    PINS ENDPOINTS
@@ -76,20 +87,45 @@ api.get("/pins/:id", (req, res) => {
  *       200:
  *         description: Created pin
  */
-api.post("/pins", (req, res) => {
-  const { latitude, longitude, message } = req.body;
+api.post("/pins", apiLimiter, (req, res) => {
+  const { latitude, longitude, message, name } = req.body;
+  // Validation
+  const trimmedMessage = message?.trim() ?? "";
+  const allowedChars = /^[a-zA-Z0-9á-žÁ-Ž\s@.!?,\-]+$/;
+  // Validation against bots filling nonexistent input
+  if (name) {
+    console.warn("Triggered by bot!");
+    return res.status(400).json({ error: "Request could not be processed" });
+  }
 
-  const insert = db.prepare(`
+  // Type validation of coordinates
+  if (typeof latitude !== "number" || typeof longitude !== "number") {
+    return res.status(400).json({ error: "Invalid coordinates" });
+  }
+
+  // Message text validation
+  if (trimmedMessage.length === 0 || trimmedMessage.length > 1000) {
+    return res.status(400).json({ error: "Message must be 1-1000 chars" });
+  }
+
+  // Validation for forbidden chars
+  if (!allowedChars.test(trimmedMessage)) {
+    return res.status(400).json({ error: "Forbidden characters in message" });
+  }
+
+  try {
+    const insert = db.prepare(`
     INSERT INTO pins (latitude, longitude, message)
     VALUES (?, ?, ?)
   `);
-
-  const result = insert.run(latitude, longitude, message);
-  const pin = db.prepare("SELECT * FROM pins WHERE id = ?").get(result.lastInsertRowid);
-
-  res.json(pin);
+    const result = insert.run(latitude, longitude, trimmedMessage);
+    const pin = db.prepare("SELECT * FROM pins WHERE id = ?").get(result.lastInsertRowid);
+    res.json(pin);
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Internal database error" });
+  }
 });
-
 
 /**
  * @openapi
@@ -118,7 +154,6 @@ api.delete("/pins/:id", (req, res) => {
 
   res.json({ deleted: true });
 });
-
 
 /* --------------------------------------------------------------------------------------------------
    REPORTED PINS ENDPOINTS

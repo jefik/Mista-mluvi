@@ -1,72 +1,66 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import { apiKeyAuth } from './middlewares/apiKeyAuth.js'
+import express from "express";
+import dotenv from "dotenv";
+import { apiKeyAuth } from "./middlewares/apiKeyAuth.js";
 import db from "./db.js"; //import runs db init migration - DO NOT DELETE!
 import api from "./api.js";
-import {swaggerUiMiddleware, swaggerUiHandler } from "./swagger/swagger.js";
+import { swaggerUiMiddleware, swaggerUiHandler } from "./swagger/swagger.js";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 
 //load .env to process.env
-dotenv.config(); 
+dotenv.config();
 const isDev = process.env.IS_DEV == "true"; //IS DEVELOPMENT
 
 const app = express();
 
 //CORS
-app.use(cors({
-  origin: [
-   process.env.APP_URL,
-   "http://localhost:5173" //frontend dev
-  ]
-}));
-
-
-
-//Rate limiting - spam, dos attacks
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 20,             // max 20 request/min from same IP
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use(apiLimiter);
-
+app.use(
+  cors({
+    origin: [
+      process.env.APP_URL,
+      "http://localhost:5173", //frontend dev
+    ],
+  }),
+);
 
 //JSON parser
 app.use(express.json()); //parse json from request to req.body (req.body.name)
 
-// dokumentace 
-if(isDev){
-    app.use("/docs", swaggerUiMiddleware, swaggerUiHandler);
+// dokumentace
+if (isDev) {
+  app.use("/docs", swaggerUiMiddleware, swaggerUiHandler);
 }
 
-
 //Endpoints
-app.get('/ready', (_req, res) => res.status(200).send('READY'));
+app.get("/ready", (_req, res) => res.status(200).send("READY"));
 
+//Rate limiting - spam, dos attacks
+export const apiLimiter = rateLimit({
+  windowMs: 30 * 1000, // 30 seconds
+  max: 1, // max 1 request/min from same IP
+  message: { error: "Další vzkaz můžete poslat až za 30 sekund." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+/* app.use(apiLimiter); */
 
 //API AUTH - REQUIRE API KEY
 app.use(apiKeyAuth);
 
-// API endpoints 
+// API endpoints
 app.use("/api", api);
 
-
-app.get('/test_api', (_req, res) => res.status(200).send('api response'));
-
+app.get("/test_api", (_req, res) => res.status(200).send("api response"));
 
 // 404 not found handler
 app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
+  res.status(404).json({ error: "Not found" });
 });
-
 
 // Error handler
 app.use((err, req, res, next) => {
-  res.status(500).json({ error: 'Internal error' });
+  res.status(500).json({ error: "Internal error" });
 });
-
 
 //------------------------------------------------------------------------------------------------
 //SERVER START LISTENING
