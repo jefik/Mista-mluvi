@@ -4,7 +4,6 @@ import { apiKeyAuth } from "./middlewares/apiKeyAuth.js";
 import db from "./db.js"; //import runs db init migration - DO NOT DELETE!
 import api from "./api.js";
 import { swaggerUiMiddleware, swaggerUiHandler } from "./swagger/swagger.js";
-import rateLimit from "express-rate-limit";
 import cors from "cors";
 
 //load .env to process.env
@@ -33,16 +32,6 @@ if (isDev) {
 
 //Endpoints
 app.get("/ready", (_req, res) => res.status(200).send("READY"));
-
-//Rate limiting - spam, dos attacks
-export const apiLimiter = rateLimit({
-  windowMs: 30 * 1000, // 30 seconds
-  max: 1, // max 1 request/min from same IP
-  message: { error: "Další vzkaz můžete poslat až za 30 sekund." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-/* app.use(apiLimiter); */
 
 //API AUTH - REQUIRE API KEY
 app.use(apiKeyAuth);

@@ -12,7 +12,6 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-/* app.use(apiLimiter); */
 
 /* --------------------------------------------------------------------------------------------
    PINS ENDPOINTS
@@ -92,6 +91,7 @@ api.post("/pins", apiLimiter, (req, res) => {
   // Validation
   const trimmedMessage = message?.trim() ?? "";
   const allowedChars = /^[a-zA-Z0-9á-žÁ-Ž\s@.!?,\-]+$/;
+  // TODO: Block the ip of the bot
   // Validation against bots filling nonexistent input
   if (name) {
     console.warn("Triggered by bot!");
