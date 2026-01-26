@@ -1,0 +1,31 @@
+services:
+  # Backend (Express.js)
+  backend:
+    build:
+      context: ./backend
+    container_name: express_backend
+    ports:
+      - "3000:3000" # Zpřístupní backend na localhost:3000
+    volumes:
+      # Propojí složku 'data' na vašem disku se složkou v kontejneru
+      - ./backend/data:/app/data
+    env_file: ./backend/.env
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Frontend (React + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+    container_name: react_frontend
+    ports:
+      - "8080:80" # Zpřístupní frontend na localhost:8080
+    env_file: ./frontend/.env
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
