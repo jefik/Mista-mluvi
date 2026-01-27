@@ -3,7 +3,7 @@ services:
   backend:
     build:
       context: ./backend
-    container_name: express_backend
+    container_name: mistamluvi_backend
     ports:
       - "3000:3000" # Zpřístupní backend na localhost:3000
     volumes:
@@ -12,20 +12,24 @@ services:
     env_file: ./backend/.env
     restart: unless-stopped
     networks:
-      - app-network
+      edge:
+        aliases:
+          - mistamluvi_backend
 
   # Frontend (React + Nginx)
   frontend:
     build:
       context: ./frontend
-    container_name: react_frontend
+    container_name: mistamluvi_frontend
     ports:
       - "8080:80" # Zpřístupní frontend na localhost:8080
     env_file: ./frontend/.env
     restart: unless-stopped
     networks:
-      - app-network
+      edge:
+        aliases:
+          - mistamluvi_frontend
 
 networks:
-  app-network:
-    driver: bridge
+    edge:
+      external: true
