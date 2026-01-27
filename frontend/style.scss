@@ -4,13 +4,11 @@ $color-beige: #e6ccb2;
 $color-sand: #ddb892;
 $color-brown-light: #b08968;
 $color-brown: #7f5539;
-
 $color-off-white: #fdfaf7;
 $cluster-opacity: rgba(176, 137, 104, 0.4);
 $welcome-opacity: rgba(237, 224, 212, 0.918);
+
 .app-container {
-  height: 100vh;
-  position: relative;
   .welcome-message {
     position: absolute;
     bottom: 20px;
@@ -23,7 +21,9 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
     border-radius: 50px;
     text-align: center;
     pointer-events: unset;
-
+    .toggle-welcome {
+      display: none; // Na desktopu tlačítko úplně zmizí
+    }
     h2 {
       color: $color-brown;
       padding: 0;
@@ -204,7 +204,7 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
       }
       &::placeholder {
         color: $color-brown;
-        font-size: small;
+        font-size: 0.8rem;
         padding-top: 3px;
       }
     }
@@ -309,17 +309,88 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
 }
 
 // MEDIA QUERIES
-@media (max-width: 625px) {
+
+@media (max-width: 625px), (max-height: 450px) {
   .app-container {
+    // Welcome message open
     .welcome-message {
-      bottom: 45px;
+      position: fixed;
+      bottom: 55px;
+      left: 50%;
+      transform: translateX(-50%);
+
       width: 85%;
+      max-width: 95%;
+      padding: 15px 10px;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      // Landscape for mobile
+      @media (max-height: 450px) {
+        width: fit-content;
+        bottom: 25px;
+        p {
+          white-space: nowrap;
+        }
+      }
+      .toggle-welcome {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+
+        position: absolute;
+        top: -17px;
+        left: 50%;
+        transform: translateX(-50%);
+
+        background-color: $color-brown;
+        color: $color-beige-light;
+        border: 1px solid $color-brown-light;
+        border-radius: 20px;
+        padding: 8px 15px;
+        font-size: 0.65rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        white-space: nowrap;
+        transition: all 0.5s ease;
+        .button-inner {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 100%;
+          height: 100%;
+        }
+        .icon {
+          width: 16px;
+          height: 16px;
+          flex-shrink: 0;
+        }
+      }
       h2 {
+        margin-top: 6px;
         font-size: 1.125rem;
       }
-
       p {
         font-size: 0.875rem;
+        padding: 0px 20px;
+      }
+    }
+
+    // Welcome message closed
+    &.welcome-closed {
+      .welcome-message {
+        // Moving it under the view
+        transform: translate(-50%, calc(100% + 55px));
+        opacity: 1;
+
+        .welcome-content {
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .toggle-welcome {
+          top: -80px;
+        }
       }
     }
   }
