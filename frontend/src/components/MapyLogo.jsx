@@ -1,7 +1,7 @@
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 
-export default function MapyLogo() {
+export const MapyLogo = () => {
   const map = useMap();
 
   // Add mapy.cz logo only if its not there
@@ -25,4 +25,4 @@ export default function MapyLogo() {
   }
 
   return null;
-}
+};

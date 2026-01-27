@@ -1,17 +1,22 @@
 import { useRef, useState } from "react";
-import "leaflet/dist/leaflet.css";
 import { usePins, useCreatePin } from "../hooks/usePins";
 import { MapContainer, TileLayer, useMapEvents, useMap, GeoJSON } from "react-leaflet";
 import { Marker, Popup, Rectangle } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "leaflet/dist/leaflet.css";
 import { point as turfPoint, polygon as turfPolygon } from "@turf/helpers";
-import { savedPin, previewPin } from "../utils/mapIcons";
-import WorldOverlay from "./WorldOverlay";
-import MapyLogo from "./MapyLogo";
+
+// Components imports
+import { WorldOverlay } from "./WorldOverlay";
+import { MapyLogo } from "./MapyLogo";
+import { WelcomeOverlay } from "./WelcomeOverlay";
+// Utils imports
 import { isInsideCzechia } from "../utils/GeoUtils";
 import { getValidationError } from "../utils/PinValidation";
+import { savedPin, previewPin } from "../utils/mapIcons";
+// Hooks imports
 import { useAntiSpamTimer } from "../hooks/useAntiSpamTimer";
 import { useMapControls } from "../hooks/useMapControls";
 import { useWindowSize } from "../hooks/useWindowSize";
@@ -28,8 +33,9 @@ export default function MapLeaflet() {
   const { isMobile, isTablet } = useWindowSize();
   // Adjust values of map zooms for responsivity
   const MAP_SETTINGS = {
-    initialZoom: isMobile ? 6.5 : isTablet ? 7 : 8,
-    minZoom: isMobile ? 6.5 : isTablet ? 7 : 8,
+    initialZoom: isMobile ? 6 : isTablet ? 7 : 8,
+    minZoom: isMobile ? 6 : isTablet ? 7 : 8,
+    clusterRadius: isMobile ? 60 : 80,
   };
 
   // --- Map click ---
@@ -116,7 +122,6 @@ export default function MapLeaflet() {
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
 
-        const pt = turfPoint([lng, lat]);
         // Check if click is outside of czech republic
         if (!isInsideCzechia(lat, lng)) {
           return;
@@ -137,8 +142,8 @@ export default function MapLeaflet() {
           setDraftPin(null);
           setMapLock(false);
           updateDragging();
+          map.closePopup();
         }
-        map.closePopup();
       },
     });
 
@@ -232,8 +237,8 @@ export default function MapLeaflet() {
 
         <Rectangle
           bounds={[
-            [45.0, 5.0],
-            [55.0, 25.0],
+            [-90, -180],
+            [90, 180],
           ]}
           pathOptions={{
             fillColor: "black",
@@ -254,63 +259,66 @@ export default function MapLeaflet() {
   }
 
   return (
-    <MapContainer
-      center={[49.8, 15.5]}
-      zoom={MAP_SETTINGS.initialZoom}
-      minZoom={MAP_SETTINGS.minZoom}
-      maxZoom={22}
-      zoomSnap={0.5} // Enable 0.5 values
-      maxBounds={[
-        [48.55, 12.09],
-        [51.06, 18.87],
-      ]}
-      className="dark-theme"
-      maxBoundsViscosity={1}
-      renderer={L.svg({ padding: 3 })} // Rendering more outside then loaded map
-    >
-      <WorldOverlay />
-      <TileLayer
-        url={`https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}?apikey=${import.meta.env.VITE_MAP_API_KEY}`}
-        attribution='<a href="https://api.mapy.com/copyright" target="_blank">&copy; Seznam.cz</a>'
-      />
-      <MapyLogo />
-      <MapClickHandler />
-      <MarkerClusterGroup showCoverageOnHover={false}>
-        {pins.map((pin) => (
-          <Marker
-            key={pin.id}
-            position={[pin.latitude, pin.longitude]}
-            icon={savedPin}
-            eventHandlers={{
-              popupopen: (e) => {
-                const map = e.target._map;
-                map.setMaxBounds([
-                  [45.0, 5.0],
-                  [55.0, 25.0],
-                ]);
-                const popup = e.popup.getElement();
-                if (popup) {
-                  popup.classList.add("custom-message");
-                }
-              },
-              popupclose: (e) => {
-                const map = e.target._map;
-                map.setMaxBounds([
-                  [48.55, 12.09],
-                  [51.06, 18.87],
-                ]);
-              },
-            }}
-          >
-            <Popup closeButton={false} autoClose={false} closeOnClick={false} autoPanPadding={[50, 50]}>
-              <div className="pin-message">
-                <p>{pin.message}</p>
-                <p className="pin-date">Zanecháno dne: {new Date(pin.created_at).toLocaleString("cs-CZ")}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MarkerClusterGroup>
-    </MapContainer>
+    <>
+      <WelcomeOverlay />
+      <MapContainer
+        center={[49.8, 15.5]}
+        zoom={MAP_SETTINGS.initialZoom}
+        minZoom={MAP_SETTINGS.minZoom}
+        maxZoom={18}
+        zoomSnap={0.5} // Enable 0.5 values
+        maxBounds={[
+          [48.55, 12.09],
+          [51.06, 18.87],
+        ]}
+        className="dark-theme"
+        maxBoundsViscosity={1}
+        renderer={L.svg({ padding: 3 })} // Rendering more outside then loaded map
+      >
+        <WorldOverlay />
+        <TileLayer
+          url={`https://api.mapy.com/v1/maptiles/basic/256/{z}/{x}/{y}?apikey=${import.meta.env.VITE_MAP_API_KEY}`}
+          attribution='<a href="https://api.mapy.com/copyright" target="_blank">&copy; Seznam.cz</a>'
+        />
+        <MapyLogo />
+        <MapClickHandler />
+        <MarkerClusterGroup showCoverageOnHover={false} maxClusterRadius={MAP_SETTINGS.clusterRadius}>
+          {pins.map((pin) => (
+            <Marker
+              key={pin.id}
+              position={[pin.latitude, pin.longitude]}
+              icon={savedPin}
+              eventHandlers={{
+                popupopen: (e) => {
+                  const map = e.target._map;
+                  map.setMaxBounds([
+                    [45.0, 5.0],
+                    [55.0, 25.0],
+                  ]);
+                  const popup = e.popup.getElement();
+                  if (popup) {
+                    popup.classList.add("custom-message");
+                  }
+                },
+                popupclose: (e) => {
+                  const map = e.target._map;
+                  map.setMaxBounds([
+                    [48.55, 12.09],
+                    [51.06, 18.87],
+                  ]);
+                },
+              }}
+            >
+              <Popup closeButton={false} autoClose={false} closeOnClick={false} autoPanPadding={[50, 50]}>
+                <div className="pin-message">
+                  <p>{pin.message}</p>
+                  <p className="pin-date">Zanecháno dne: {new Date(pin.created_at).toLocaleString("cs-CZ")}</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
+      </MapContainer>
+    </>
   );
 }

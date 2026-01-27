@@ -3,7 +3,7 @@ import { GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import { czechBoundary } from "../utils/GeoUtils";
 
-export default function WorldOverlay() {
+export const WorldOverlay = () => {
   // Func to create black overlay with hole in shape of czech republic
   const worldOverlay = useMemo(() => {
     // Outer boundary (world boundary)
@@ -50,4 +50,4 @@ export default function WorldOverlay() {
       }}
     />
   );
-}
+};
