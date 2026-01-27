@@ -6,7 +6,6 @@ import MarkerClusterGroup from "react-leaflet-markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import "leaflet/dist/leaflet.css";
-import { point as turfPoint, polygon as turfPolygon } from "@turf/helpers";
 
 // Components imports
 import { WorldOverlay } from "./WorldOverlay";
@@ -16,6 +15,7 @@ import { WelcomeOverlay } from "./WelcomeOverlay";
 import { isInsideCzechia } from "../utils/GeoUtils";
 import { getValidationError } from "../utils/PinValidation";
 import { savedPin, previewPin } from "../utils/mapIcons";
+import { formatCzechDate } from "../utils/DateUtils";
 // Hooks imports
 import { useAntiSpamTimer } from "../hooks/useAntiSpamTimer";
 import { useMapControls } from "../hooks/useMapControls";
@@ -312,7 +312,7 @@ export default function MapLeaflet() {
               <Popup closeButton={false} autoClose={false} closeOnClick={false} autoPanPadding={[50, 50]}>
                 <div className="pin-message">
                   <p>{pin.message}</p>
-                  <p className="pin-date">Zanecháno dne: {new Date(pin.created_at).toLocaleString("cs-CZ")}</p>
+                  <p className="pin-date">Zanecháno dne: {formatCzechDate(pin.created_at)}</p>
                 </div>
               </Popup>
             </Marker>
