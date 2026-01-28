@@ -15,7 +15,8 @@ db.exec(`
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
     message TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    likes_count INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS reported_pins (

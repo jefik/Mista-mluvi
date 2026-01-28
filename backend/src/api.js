@@ -5,10 +5,29 @@ import rateLimit from "express-rate-limit";
 const api = Router();
 
 //Rate limiting - spam, dos attacks
+// Limiter for messages
 const apiLimiter = rateLimit({
   windowMs: 30 * 1000, // 30 seconds
   max: 1, // max 1 request/min from same IP
   message: { error: "Další vzkaz můžete poslat až za 30 sekund." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Limiter for spamming likes
+const likeShortLimiter = rateLimit({
+  windowMs: 30 * 1000,
+  max: 10,
+  message: { error: "Další like můžete dát až za 30 sekund" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Daily limiter for spamming likes
+const likeDailyLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 100,
+  message: { error: "Dosáhli jste denního limitu 100 lajků. Děkujeme za aktivitu!" },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -155,6 +174,69 @@ api.delete("/pins/:id", (req, res) => {
   res.json({ deleted: true });
 });
 
+/**
+ * @openapi
+ * /api/pins/{id}/like:
+ *   post:
+ *     tags:
+ *       - Pins
+ *     summary: Update pin likes count
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               increment:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Like updated
+ */
+api.post(
+  "/pins/:id/like",
+  (req, res, next) => {
+    const { increment } = req.body;
+    // If user likes message, both limiters apply
+    if (increment === true) {
+      likeDailyLimiter(req, res, () => {
+        likeShortLimiter(req, res, next);
+      });
+      // If user is removing like, limiters dont apply
+    } else {
+      next();
+    }
+  },
+  (req, res) => {
+    const { id } = req.params;
+    const { increment } = req.body;
+
+    try {
+      const query = increment
+        ? "UPDATE pins SET likes_count = likes_count + 1 WHERE id = ?"
+        : "UPDATE pins SET likes_count = MAX(0, likes_count - 1) WHERE id = ?"; // Safe func against negative likes
+
+      const stmt = db.prepare(query);
+      const result = stmt.run(id);
+
+      if (result.changes === 0) {
+        return res.status(404).json({ error: "Pin not found" });
+      }
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Database error:", err);
+      res.status(500).json({ error: "Internal database error" });
+    }
+  },
+);
 /* --------------------------------------------------------------------------------------------------
    REPORTED PINS ENDPOINTS
 --------------------------------------------------------------------------------------------------- */
