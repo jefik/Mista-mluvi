@@ -55,12 +55,14 @@ const LikeButton = ({ pin }) => {
       <svg
         width="18"
         height="18"
-        viewBox="0 0 24 24"
         fill={isLiked ? "#7f5539" : "none"}
         stroke={isLiked ? "#7f5539" : "currentColor"}
-        strokeWidth="2"
+        strokeWidth="1"
+        viewBox="0 0 15 15"
       >
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.72-8.72 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        <path
+          d="M13.91,6.75c-1.17,2.25-4.3,5.31-6.07,6.94c-0.1903,0.1718-0.4797,0.1718-0.67,0C5.39,12.06,2.26,9,1.09,6.75&#xA;&#x9;C-1.48,1.8,5-1.5,7.5,3.45C10-1.5,16.48,1.8,13.91,6.75z"
+        />
       </svg>
       <span className="like-counter">{localLikes}</span>
     </button>
