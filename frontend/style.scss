@@ -17,12 +17,12 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
     z-index: 1000;
     background-color: $welcome-opacity;
     border: 2px solid $color-brown-light;
-    padding: 10px 25px;
+    padding: 10px 45px;
     border-radius: 50px;
     text-align: center;
     pointer-events: unset;
     .toggle-welcome {
-      display: none; // Na desktopu tlačítko úplně zmizí
+      display: none;
     }
     h2 {
       color: $color-brown;
@@ -55,10 +55,55 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
   }
   .pin-message {
     word-break: break-all;
+  }
+
+  .pin-footer {
+    word-break: break-all;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba($color-brown-light, 0.2);
     .pin-date {
       font-size: 0.675rem;
       font-style: italic;
       opacity: 0.7;
+      margin: 0;
+    }
+
+    .pin-actions {
+      display: flex;
+      align-items: center;
+
+      .like-button {
+        background: none;
+        border: none;
+        padding: 4px 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: $color-brown-light;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+
+        &:active {
+          transform: scale(0.85);
+        }
+
+        .like-counter {
+          font-size: 0.875rem;
+          font-weight: 700;
+        }
+
+        svg {
+          display: block;
+          transition:
+            fill 0.3s ease,
+            transform 0.2s ease;
+        }
+      }
     }
   }
 
@@ -212,6 +257,9 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
 
   // Pins message
   .custom-message {
+    .leaflet-popup-content {
+      min-width: 250px;
+    }
     .leaflet-popup-content-wrapper {
       background-color: $color-beige-lighter;
       border: 1px solid $color-brown-light;

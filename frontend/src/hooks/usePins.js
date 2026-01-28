@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPins, createPin } from "../api/pinsApi";
+import { fetchPins, createPin, updatePinLike } from "../api/pinsApi";
 
 export const usePins = () => {
   return useQuery({
@@ -12,6 +12,7 @@ export const usePins = () => {
         longitude: pin.longitude,
         message: pin.message,
         created_at: pin.created_at,
+        likes_count: pin.likes_count || 0,
       })),
   });
 };
@@ -24,5 +25,13 @@ export const useCreatePin = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pins"] });
     },
+  });
+};
+
+export const useUpdateLike = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updatePinLike,
   });
 };

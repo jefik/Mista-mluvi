@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function useAntiSpamTimer(waitTime = 30000) {
+export function useAntiSpamTimer(storageKey, waitTime = 30000) {
   const [now, setNow] = useState(Date.now());
 
   // Rerender every second to update remaining time
@@ -10,7 +10,7 @@ export function useAntiSpamTimer(waitTime = 30000) {
   }, []);
 
   // Get the time of the last saved pin from localstorage
-  const lastPinTime = parseInt(localStorage.getItem("last_pin_timestamp") || 0);
+  const lastPinTime = parseInt(localStorage.getItem(storageKey) || 0);
 
   // Calculate the difference between now and release time
   const remaining = Math.ceil((lastPinTime + waitTime - now) / 1000);

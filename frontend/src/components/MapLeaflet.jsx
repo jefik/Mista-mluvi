@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { usePins, useCreatePin } from "../hooks/usePins";
 import { MapContainer, TileLayer, useMapEvents, useMap, GeoJSON } from "react-leaflet";
 import { Marker, Popup, Rectangle } from "react-leaflet";
@@ -11,11 +11,11 @@ import "leaflet/dist/leaflet.css";
 import { WorldOverlay } from "./WorldOverlay";
 import { MapyLogo } from "./MapyLogo";
 import { WelcomeOverlay } from "./WelcomeOverlay";
+import { SavedPin } from "./SavedPin";
 // Utils imports
 import { isInsideCzechia } from "../utils/GeoUtils";
 import { getValidationError } from "../utils/PinValidation";
-import { savedPin, previewPin } from "../utils/mapIcons";
-import { formatCzechDate } from "../utils/DateUtils";
+import { previewPin } from "../utils/mapIcons";
 // Hooks imports
 import { useAntiSpamTimer } from "../hooks/useAntiSpamTimer";
 import { useMapControls } from "../hooks/useMapControls";
@@ -38,6 +38,11 @@ export default function MapLeaflet() {
     clusterRadius: isMobile ? 60 : 80,
   };
 
+  // Func to only re-render pins when new pin is added
+  const renderedPins = useMemo(() => {
+    return pins.map((pin) => <SavedPin key={pin.id} pin={pin} />);
+  }, [pins.length]);
+
   // --- Map click ---
   // Func to handle every interaction on the map
   function MapClickHandler() {
@@ -46,8 +51,9 @@ export default function MapLeaflet() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const botCatchRef = useRef(null);
     const [inputMessage, setInputMessage] = useState("");
+
     // Prevent spam, checks if the user is in a set coldown 10s
-    const { isWaiting, remaining } = useAntiSpamTimer(30000); // using hook
+    const { isWaiting, remaining } = useAntiSpamTimer("last_pin_timestamp", 30000);
 
     // --- Map ---
     // For map
@@ -283,40 +289,7 @@ export default function MapLeaflet() {
         <MapyLogo />
         <MapClickHandler />
         <MarkerClusterGroup showCoverageOnHover={false} maxClusterRadius={MAP_SETTINGS.clusterRadius}>
-          {pins.map((pin) => (
-            <Marker
-              key={pin.id}
-              position={[pin.latitude, pin.longitude]}
-              icon={savedPin}
-              eventHandlers={{
-                popupopen: (e) => {
-                  const map = e.target._map;
-                  map.setMaxBounds([
-                    [45.0, 5.0],
-                    [55.0, 25.0],
-                  ]);
-                  const popup = e.popup.getElement();
-                  if (popup) {
-                    popup.classList.add("custom-message");
-                  }
-                },
-                popupclose: (e) => {
-                  const map = e.target._map;
-                  map.setMaxBounds([
-                    [48.55, 12.09],
-                    [51.06, 18.87],
-                  ]);
-                },
-              }}
-            >
-              <Popup closeButton={false} autoClose={false} closeOnClick={false} autoPanPadding={[50, 50]}>
-                <div className="pin-message">
-                  <p>{pin.message}</p>
-                  <p className="pin-date">Zanecháno dne: {formatCzechDate(pin.created_at)}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {renderedPins}
         </MarkerClusterGroup>
       </MapContainer>
     </>
