@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { forwardRef, useState } from "react";
 import { Marker, Popup } from "react-leaflet";
 import { savedPin } from "../utils/mapIcons";
 import { formatCzechDate } from "../utils/DateUtils";
@@ -70,11 +70,12 @@ const LikeButton = ({ pin }) => {
 };
 
 // Main component - func to render marker with popup for a specific pin
-export const SavedPin = ({ pin }) => {
+export const SavedPin = forwardRef(({ pin }, ref) => {
   return (
     <Marker
       position={[pin.latitude, pin.longitude]}
       icon={savedPin}
+      ref={ref}
       eventHandlers={{
         popupopen: (e) => {
           e.target._map.setMaxBounds([
@@ -104,4 +105,4 @@ export const SavedPin = ({ pin }) => {
       </Popup>
     </Marker>
   );
-};
+});

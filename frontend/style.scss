@@ -11,13 +11,14 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
 .app-container {
   .welcome-message {
     position: absolute;
-    bottom: 20px;
+    bottom: 40px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
     background-color: $welcome-opacity;
     border: 2px solid $color-brown-light;
     padding: 10px 45px;
+    padding-bottom: 30px;
     border-radius: 50px;
     text-align: center;
     pointer-events: unset;
@@ -91,6 +92,12 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
         &:active {
           transform: scale(0.85);
         }
+        &:focus,
+        &:focus-visible,
+        &:active {
+          outline: none !important;
+          box-shadow: none !important;
+        }
 
         .like-counter {
           font-size: 0.875rem;
@@ -103,6 +110,58 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
             fill 0.3s ease,
             transform 0.2s ease;
         }
+      }
+    }
+  }
+
+  // Random pin button
+  .random-fly-container {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    pointer-events: auto;
+
+    .btn-random-fly {
+      font-weight: 700;
+      border-radius: 50px;
+      padding: 12px 28px;
+      background-color: $color-brown;
+      color: $color-beige-light;
+      border: 1px solid $color-brown-light;
+      box-shadow: 0 0 0 3px rgba(176, 137, 104, 0.3);
+      cursor: pointer;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px) scale(1.03);
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(0) scale(0.96);
+      }
+
+      &:disabled {
+        // Pulsing text
+        @keyframes pulseText {
+          0% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+          100% {
+            opacity: 1;
+          }
+        }
+        opacity: 0.7;
+        cursor: wait;
+        transform: scale(1);
+        animation: pulseText 1.5s infinite ease-in-out;
       }
     }
   }
@@ -440,6 +499,19 @@ $welcome-opacity: rgba(237, 224, 212, 0.918);
           top: -80px;
         }
       }
+    }
+  }
+  .dark-theme {
+    .random-fly-container {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      left: auto;
+      bottom: auto;
+      transform: none;
+      right: 20px;
+      z-index: 10000;
+      pointer-events: auto;
     }
   }
 }

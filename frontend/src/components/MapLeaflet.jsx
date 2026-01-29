@@ -12,6 +12,7 @@ import { WorldOverlay } from "./WorldOverlay";
 import { MapyLogo } from "./MapyLogo";
 import { WelcomeOverlay } from "./WelcomeOverlay";
 import { SavedPin } from "./SavedPin";
+import { RandomPinFly } from "./RandomPinFly";
 import { DraftPinForm } from "./DraftPinForm";
 // Utils imports
 import { isInsideCzechia } from "../utils/GeoUtils";
@@ -34,9 +35,21 @@ export default function MapLeaflet() {
     clusterRadius: isMobile ? 60 : 80,
   };
 
+  // Fly to random pin
+  const markerRefs = useRef({}); // Stores all marker instances
+  const [isFlying, setIsFlying] = useState(false);
+
   // Func to only re-render pins when new pin is added
   const renderedPins = useMemo(() => {
-    return pins.map((pin) => <SavedPin key={pin.id} pin={pin} />);
+    return pins.map((pin) => (
+      <SavedPin
+        key={pin.id}
+        pin={pin}
+        ref={(el) => {
+          if (el) markerRefs.current[pin.id] = el;
+        }}
+      />
+    ));
   }, [pins]);
 
   // --- Map click ---
@@ -52,6 +65,12 @@ export default function MapLeaflet() {
     // Func to unlock and lock dragging on map, if map havent been zoomed
     const updateDragging = () => {
       const zoom = map.getZoom();
+
+      if (isFlying) {
+        map.dragging.disable();
+        return;
+      }
+
       if (zoom <= MAP_SETTINGS.minZoom) {
         map.dragging.disable();
       } else if (!draftPin) {
@@ -67,6 +86,7 @@ export default function MapLeaflet() {
       },
       // Create new draft pin on map click
       click(e) {
+        if (isFlying) return;
         const lat = e.latlng.lat;
         const lng = e.latlng.lng;
 
@@ -152,7 +172,7 @@ export default function MapLeaflet() {
         />
         <MapyLogo />
         <MapClickHandler />
-
+        <RandomPinFly pins={pins} markerRefs={markerRefs} isFlying={isFlying} setIsFlying={setIsFlying} />
         <MarkerClusterGroup showCoverageOnHover={false} maxClusterRadius={MAP_SETTINGS.clusterRadius}>
           {renderedPins}
         </MarkerClusterGroup>

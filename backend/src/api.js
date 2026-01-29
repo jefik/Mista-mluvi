@@ -14,7 +14,8 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Limiter for spamming likes
+// TODO: Implement IP validation for likes
+/* // Limiter for spamming likes
 const likeShortLimiter = rateLimit({
   windowMs: 30 * 1000,
   max: 10,
@@ -30,7 +31,7 @@ const likeDailyLimiter = rateLimit({
   message: { error: "Dosáhli jste denního limitu 100 lajků. Děkujeme za aktivitu!" },
   standardHeaders: true,
   legacyHeaders: false,
-});
+}); */
 
 /* --------------------------------------------------------------------------------------------
    PINS ENDPOINTS
@@ -200,43 +201,28 @@ api.delete("/pins/:id", (req, res) => {
  *       200:
  *         description: Like updated
  */
-api.post(
-  "/pins/:id/like",
-  (req, res, next) => {
-    const { increment } = req.body;
-    // If user likes message, both limiters apply
-    if (increment === true) {
-      likeDailyLimiter(req, res, () => {
-        likeShortLimiter(req, res, next);
-      });
-      // If user is removing like, limiters dont apply
-    } else {
-      next();
+api.post("/pins/:id/like", (req, res) => {
+  const { id } = req.params;
+  const { increment } = req.body;
+
+  try {
+    const query = increment
+      ? "UPDATE pins SET likes_count = likes_count + 1 WHERE id = ?"
+      : "UPDATE pins SET likes_count = MAX(0, likes_count - 1) WHERE id = ?"; // Safe func against negative likes
+
+    const stmt = db.prepare(query);
+    const result = stmt.run(id);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: "Pin not found" });
     }
-  },
-  (req, res) => {
-    const { id } = req.params;
-    const { increment } = req.body;
 
-    try {
-      const query = increment
-        ? "UPDATE pins SET likes_count = likes_count + 1 WHERE id = ?"
-        : "UPDATE pins SET likes_count = MAX(0, likes_count - 1) WHERE id = ?"; // Safe func against negative likes
-
-      const stmt = db.prepare(query);
-      const result = stmt.run(id);
-
-      if (result.changes === 0) {
-        return res.status(404).json({ error: "Pin not found" });
-      }
-
-      res.json({ success: true });
-    } catch (err) {
-      console.error("Database error:", err);
-      res.status(500).json({ error: "Internal database error" });
-    }
-  },
-);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ error: "Internal database error" });
+  }
+});
 /* --------------------------------------------------------------------------------------------------
    REPORTED PINS ENDPOINTS
 --------------------------------------------------------------------------------------------------- */
